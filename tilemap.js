@@ -17,3 +17,34 @@ export function cellAt(grid, col, row) {
 export function isSolidAt(grid, col, row) {
   return cellAt(grid, col, row) === SOLID;
 }
+
+// Move an AABB (top-left x,y, size w,h) along X by dx, snapping to solids.
+export function resolveX(grid, x, y, w, h, dx, TILE) {
+  let nx = x + dx;
+  const rowStart = Math.floor(y / TILE);
+  const rowEnd = Math.floor((y + h - 0.001) / TILE);
+  let hit = false;
+  let wallDir = 0;
+  if (dx > 0) {
+    const col = Math.floor((nx + w - 0.001) / TILE);
+    for (let r = rowStart; r <= rowEnd; r++) {
+      if (isSolidAt(grid, col, r)) {
+        nx = col * TILE - w;
+        hit = true;
+        wallDir = 1;
+        break;
+      }
+    }
+  } else if (dx < 0) {
+    const col = Math.floor(nx / TILE);
+    for (let r = rowStart; r <= rowEnd; r++) {
+      if (isSolidAt(grid, col, r)) {
+        nx = (col + 1) * TILE;
+        hit = true;
+        wallDir = -1;
+        break;
+      }
+    }
+  }
+  return { x: nx, hit, wallDir };
+}

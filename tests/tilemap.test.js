@@ -25,3 +25,34 @@ describe('isSolidAt', () => {
     expect(isSolidAt(grid, 0, 1)).toBe(false); // oneway is not "solid"
   });
 });
+
+import { resolveX } from '../tilemap.js';
+
+// 4 cols × 3 rows; a solid wall in column 2.
+const wallGrid = [
+  [0, 0, 1, 0],
+  [0, 0, 1, 0],
+  [0, 0, 1, 0],
+];
+const TILE = 10;
+
+describe('resolveX', () => {
+  it('moves freely when nothing is hit', () => {
+    const r = resolveX(wallGrid, 0, 0, 8, 8, 5, TILE);
+    expect(r).toEqual({ x: 5, hit: false, wallDir: 0 });
+  });
+  it('snaps against a wall on the right', () => {
+    // AABB w=8 moving right into column 2 (x from 12 → wants 18)
+    const r = resolveX(wallGrid, 12, 0, 8, 8, 6, TILE);
+    expect(r.x).toBe(20 - 8); // right edge flush to col 2 left edge (x=20)
+    expect(r.hit).toBe(true);
+    expect(r.wallDir).toBe(1);
+  });
+  it('snaps against a wall on the left', () => {
+    // column 2 spans x[20,30]; AABB at x=30 moving left into it
+    const r = resolveX(wallGrid, 30, 0, 8, 8, -6, TILE);
+    expect(r.x).toBe(30); // left edge flush to col 2 right edge (x=30)
+    expect(r.hit).toBe(true);
+    expect(r.wallDir).toBe(-1);
+  });
+});
