@@ -48,3 +48,34 @@ export function resolveX(grid, x, y, w, h, dx, TILE) {
   }
   return { x: nx, hit, wallDir };
 }
+
+// Move an AABB along Y by dy. `dropThrough` and `prevBottom` are used by
+// one-way platforms (added in the next task); ignored for solids here.
+export function resolveY(grid, x, y, w, h, dy, TILE, dropThrough, prevBottom) {
+  let ny = y + dy;
+  const colStart = Math.floor(x / TILE);
+  const colEnd = Math.floor((x + w - 0.001) / TILE);
+  let hit = false;
+  let grounded = false;
+  if (dy > 0) {
+    const row = Math.floor((ny + h - 0.001) / TILE);
+    for (let c = colStart; c <= colEnd; c++) {
+      if (cellAt(grid, c, row) === SOLID) {
+        ny = row * TILE - h;
+        hit = true;
+        grounded = true;
+        break;
+      }
+    }
+  } else if (dy < 0) {
+    const row = Math.floor(ny / TILE);
+    for (let c = colStart; c <= colEnd; c++) {
+      if (cellAt(grid, c, row) === SOLID) {
+        ny = (row + 1) * TILE;
+        hit = true;
+        break;
+      }
+    }
+  }
+  return { y: ny, hit, grounded };
+}

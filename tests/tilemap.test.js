@@ -26,7 +26,7 @@ describe('isSolidAt', () => {
   });
 });
 
-import { resolveX } from '../tilemap.js';
+import { resolveX, resolveY, SOLID, TILE as TILE_CONST } from '../tilemap.js';
 
 // 4 cols × 3 rows; a solid wall in column 2.
 const wallGrid = [
@@ -54,5 +54,33 @@ describe('resolveX', () => {
     expect(r.x).toBe(30); // left edge flush to col 2 right edge (x=30)
     expect(r.hit).toBe(true);
     expect(r.wallDir).toBe(-1);
+  });
+});
+
+// 3 cols × 3 rows, floor along the bottom row.
+const floorGrid = [
+  [0, 0, 0],
+  [0, 0, 0],
+  [1, 1, 1],
+];
+
+describe('resolveY (solids)', () => {
+  it('falls freely when nothing is hit', () => {
+    const r = resolveY(floorGrid, 0, 0, 8, 8, 5, TILE, false, 8);
+    expect(r).toEqual({ y: 5, hit: false, grounded: false });
+  });
+  it('lands on the floor and reports grounded', () => {
+    // floor top is y=20; AABB h=8 falling from y=14 wants y=20
+    const r = resolveY(floorGrid, 0, 14, 8, 8, 6, TILE, false, 22);
+    expect(r.y).toBe(20 - 8); // bottom flush to floor top
+    expect(r.hit).toBe(true);
+    expect(r.grounded).toBe(true);
+  });
+  it('bonks head on a ceiling when moving up', () => {
+    const ceil = [[1, 1, 1], [0, 0, 0], [0, 0, 0]];
+    const r = resolveY(ceil, 0, 12, 8, 8, -6, TILE, false, 20);
+    expect(r.y).toBe(10); // top flush to ceiling bottom (row 0 spans [0,10])
+    expect(r.hit).toBe(true);
+    expect(r.grounded).toBe(false);
   });
 });
