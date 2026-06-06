@@ -26,7 +26,7 @@ describe('isSolidAt', () => {
   });
 });
 
-import { resolveX, resolveY, SOLID, TILE as TILE_CONST, wallContact } from '../tilemap.js';
+import { resolveX, resolveY, wallContact } from '../tilemap.js';
 
 // 4 cols × 3 rows; a solid wall in column 2.
 const wallGrid = [
