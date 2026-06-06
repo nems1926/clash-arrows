@@ -8,7 +8,7 @@ const COL = {
   player: '#4ade80',
 };
 
-export function drawWorld(grid, player, cfg) {
+export function drawWorld(grid, player) {
   background(COL.bg);
   push();
   translate(-W * SCALE / 2, -H * SCALE / 2); // logical (0,0) at top-left
