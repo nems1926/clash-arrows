@@ -2,7 +2,9 @@ import { W, H, SCALE, DEFAULT_CONFIG } from './config.js';
 
 const PARAMS = [
   ['vMax', 0, 300], ['accel', 0, 2000], ['decel', 0, 2000],
-  ['vJump', -400, 0], ['gravity', 0, 2000], ['vFallMax', 0, 600],
+  // vFallMax capped at 540 (9 px/frame < TILE) so no per-step move exceeds a
+  // tile — keeps collision tunnel-free without sub-stepping (deferred to J1).
+  ['vJump', -400, 0], ['gravity', 0, 2000], ['vFallMax', 0, 540],
   ['vSlide', 0, 300], ['wallJumpX', 0, 400], ['wallJumpY', -400, 0],
   ['coyoteFrames', 0, 20], ['bufferFrames', 0, 20],
   ['apexGravityMult', 0, 1], ['apexVyThreshold', 0, 200], ['jumpCutMult', 0, 1],
@@ -23,7 +25,8 @@ export function createDebug(cfg) {
     label.style.width = '110px';
     const slider = document.createElement('input');
     slider.type = 'range';
-    slider.min = min; slider.max = max; slider.step = (max - min) / 200;
+    slider.min = min; slider.max = max;
+    slider.step = key.endsWith('Frames') ? 1 : (max - min) / 200; // frame counts are integers
     slider.value = cfg[key];
     const val = document.createElement('span');
     val.textContent = cfg[key];
