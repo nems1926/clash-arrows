@@ -117,14 +117,11 @@ describe('player jump & states', () => {
 
   it('applies reduced gravity near the apex', () => {
     const c = cfg();
-    const slow = createPlayer(10, 0, c); slow.vy = 0;           // |vy| < threshold
-    const fast = createPlayer(10, 0, c); fast.vy = c.vFallMax;  // |vy| ≫ threshold
-    updatePlayer(slow, idle(), c, grid, DT);
-    const fastBefore = fast.vy;
-    updatePlayer(fast, idle(), c, grid, DT);
-    const slowGain = slow.vy - 0;
-    const fastGain = Math.min(fast.vy, c.vFallMax) - fastBefore; // ~0 (capped) — compare against full step
-    expect(slowGain).toBeLessThan(c.gravity * DT); // reduced, not full gravity
+    const p = createPlayer(10, 0, c); p.vy = 0; // |vy| < apexVyThreshold
+    updatePlayer(p, idle(), c, grid, DT);
+    const gain = p.vy - 0;
+    expect(gain).toBeLessThan(c.gravity * DT); // reduced, not full gravity
+    expect(gain).toBeCloseTo(c.gravity * c.apexGravityMult * DT, 3); // exactly the reduced amount
   });
 
   it('reports GROUNDED state on the floor', () => {

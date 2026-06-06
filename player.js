@@ -21,8 +21,8 @@ export function createPlayer(x, y, cfg) {
 
 export function updatePlayer(p, intent, cfg, grid, dt) {
   // 1. timers (one fixed step == one frame)
-  p.coyote = p.grounded ? cfg.coyoteFrames : p.coyote - 1;
-  p.buffer = intent.jumpPressed ? cfg.bufferFrames : p.buffer - 1;
+  p.coyote = p.grounded ? cfg.coyoteFrames : Math.max(0, p.coyote - 1);
+  p.buffer = intent.jumpPressed ? cfg.bufferFrames : Math.max(0, p.buffer - 1);
 
   // 2. horizontal accel / decel
   if (intent.moveX !== 0) {
@@ -81,7 +81,7 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
 
   // 10. FSM state + remembered inputs
   if (p.grounded) p.state = 'GROUNDED';
-  else if (wc !== 0 && intent.moveX === wc && p.vy > 0) p.state = 'WALLSLIDE';
+  else if (!p.grounded && wc !== 0 && intent.moveX === wc && p.vy > 0) p.state = 'WALLSLIDE';
   else p.state = 'AIRBORNE';
   p.wallDir = wc;
   p.jumpHeldPrev = intent.jumpHeld;
