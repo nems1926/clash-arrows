@@ -3,6 +3,7 @@ import { ARENA_A, parseArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, computeIntent } from './input.js';
 import { drawWorld } from './render.js';
+import { createDebug, drawDebug } from './debug.js';
 
 if (!navigator.gpu) {
   document.body.innerHTML =
@@ -18,6 +19,7 @@ if (!navigator.gpu) {
   const { grid, spawns } = parseArena(ARENA_A);
   const sp = spawns[0];
   const player = createPlayer(sp.col * cfg.TILE, sp.row * cfg.TILE, cfg);
+  const dbg = createDebug();
 
   let prevKeys = { left: false, right: false, up: false, down: false, jump: false };
   const FIXED = 1 / 60;
@@ -33,6 +35,7 @@ if (!navigator.gpu) {
       acc -= FIXED;
     }
     drawWorld(grid, player);
+    drawDebug(dbg, player);
   };
 
   // expose for the debug panel (next tasks)
