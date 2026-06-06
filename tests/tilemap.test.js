@@ -26,7 +26,7 @@ describe('isSolidAt', () => {
   });
 });
 
-import { resolveX, resolveY, SOLID, TILE as TILE_CONST } from '../tilemap.js';
+import { resolveX, resolveY, SOLID, TILE as TILE_CONST, wallContact } from '../tilemap.js';
 
 // 4 cols × 3 rows; a solid wall in column 2.
 const wallGrid = [
@@ -82,5 +82,47 @@ describe('resolveY (solids)', () => {
     expect(r.y).toBe(10); // top flush to ceiling bottom (row 0 spans [0,10])
     expect(r.hit).toBe(true);
     expect(r.grounded).toBe(false);
+  });
+});
+
+import { ONEWAY } from '../tilemap.js';
+
+// one-way platform along the bottom row
+const owGrid = [
+  [0, 0, 0],
+  [0, 0, 0],
+  [2, 2, 2],
+];
+
+describe('resolveY (one-way)', () => {
+  it('lands when falling from above', () => {
+    const r = resolveY(owGrid, 0, 14, 8, 8, 6, TILE, false, 16); // prevBottom 16 ≤ top 20
+    expect(r.y).toBe(20 - 8);
+    expect(r.grounded).toBe(true);
+  });
+  it('passes through when rising from below', () => {
+    const r = resolveY(owGrid, 0, 24, 8, 8, -6, TILE, false, 32);
+    expect(r.hit).toBe(false); // upward movement never blocked by one-way
+  });
+  it('passes through when already overlapping (prevBottom below top)', () => {
+    const r = resolveY(owGrid, 0, 18, 8, 8, 6, TILE, false, 27); // prevBottom 27 > top 20
+    expect(r.hit).toBe(false);
+  });
+  it('drops through when dropThrough is true', () => {
+    const r = resolveY(owGrid, 0, 14, 8, 8, 6, TILE, true, 22);
+    expect(r.hit).toBe(false);
+  });
+});
+
+describe('wallContact', () => {
+  it('detects a solid to the right', () => {
+    expect(wallContact(wallGrid, 12, 0, 8, 8, TILE)).toBe(1); // col 2 solid at x≥20
+  });
+  it('detects a solid to the left', () => {
+    const g = [[1, 0, 0], [1, 0, 0], [1, 0, 0]];
+    expect(wallContact(g, 10, 0, 8, 8, TILE)).toBe(-1);
+  });
+  it('returns 0 in open space', () => {
+    expect(wallContact(floorGrid, 12, 0, 8, 8, TILE)).toBe(0);
   });
 });

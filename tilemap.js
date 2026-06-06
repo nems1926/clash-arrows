@@ -59,9 +59,14 @@ export function resolveY(grid, x, y, w, h, dy, TILE, dropThrough, prevBottom) {
   let grounded = false;
   if (dy > 0) {
     const row = Math.floor((ny + h - 0.001) / TILE);
+    const tileTop = row * TILE;
     for (let c = colStart; c <= colEnd; c++) {
-      if (cellAt(grid, c, row) === SOLID) {
-        ny = row * TILE - h;
+      const cell = cellAt(grid, c, row);
+      const solid = cell === SOLID;
+      // one-way: only when descending, not dropping, and we were above the top
+      const oneWay = cell === ONEWAY && !dropThrough && prevBottom <= tileTop + 0.001;
+      if (solid || oneWay) {
+        ny = tileTop - h;
         hit = true;
         grounded = true;
         break;
@@ -78,4 +83,21 @@ export function resolveY(grid, x, y, w, h, dy, TILE, dropThrough, prevBottom) {
     }
   }
   return { y: ny, hit, grounded };
+}
+
+// Returns -1 (solid on left), 1 (solid on right), or 0 (none).
+export function wallContact(grid, x, y, w, h, TILE) {
+  const r0 = Math.floor(y / TILE);
+  const r1 = Math.floor((y + h - 0.001) / TILE);
+  const colR = Math.floor((x + w + 0.001) / TILE);
+  const colL = Math.floor((x - 0.001) / TILE);
+  let right = false;
+  let left = false;
+  for (let r = r0; r <= r1; r++) {
+    if (isSolidAt(grid, colR, r)) right = true;
+    if (isSolidAt(grid, colL, r)) left = true;
+  }
+  if (right) return 1;
+  if (left) return -1;
+  return 0;
 }
