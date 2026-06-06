@@ -19,7 +19,7 @@ if (!navigator.gpu) {
   const { grid, spawns } = parseArena(ARENA_A);
   const sp = spawns[0];
   const player = createPlayer(sp.col * cfg.TILE, sp.row * cfg.TILE, cfg);
-  const dbg = createDebug();
+  const dbg = createDebug(cfg);
 
   let prevKeys = { left: false, right: false, up: false, down: false, jump: false };
   const FIXED = 1 / 60;
