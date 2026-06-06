@@ -87,7 +87,9 @@ describe('player jump & states', () => {
 
   it('cuts ascent when the jump button is released (variable height)', () => {
     const c = cfg();
-    const p = createPlayer(10, 0, c);
+    // start mid-air (y=15), not at the top edge: in this tiny 4-row grid y=0
+    // wraps toroidally into the solid floor row, causing a spurious ceiling hit.
+    const p = createPlayer(10, 15, c);
     p.vy = -150;
     p.jumpHeldPrev = true;
     updatePlayer(p, idle(), c, grid, DT); // released this frame, still ascending
