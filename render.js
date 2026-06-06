@@ -29,9 +29,13 @@ export function drawWorld(grid, player) {
     }
   }
 
-  // player (single copy for now; ghosting added next task)
+  // player + ghosts (draw at -W/0/+W and -H/0/+H offsets)
   fill(COL.player);
-  rect(player.x, player.y, player.w, player.h);
+  for (const dx of [-W, 0, W]) {
+    for (const dy of [-H, 0, H]) {
+      rect(player.x + dx, player.y + dy, player.w, player.h);
+    }
+  }
 
   pop();
 }
