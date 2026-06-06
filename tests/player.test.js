@@ -54,3 +54,80 @@ describe('player core', () => {
     expect(p.x).toBeGreaterThanOrEqual(0);
   });
 });
+
+const press = (over = {}) => ({ moveX: 0, jumpHeld: true, jumpPressed: true, down: false, ...over });
+const idle = (over = {}) => ({ moveX: 0, jumpHeld: false, jumpPressed: false, down: false, ...over });
+
+// a left wall in column 0, no floor reachable quickly
+const wallGridP = [
+  [1, 0, 0, 0],
+  [1, 0, 0, 0],
+  [1, 0, 0, 0],
+  [1, 0, 0, 0],
+];
+
+describe('player jump & states', () => {
+  it('jumps when grounded', () => {
+    const p = createPlayer(10, 0, cfg());
+    for (let i = 0; i < 120; i++) updatePlayer(p, idle(), cfg(), grid, DT); // settle on floor
+    expect(p.grounded).toBe(true);
+    updatePlayer(p, press(), cfg(), grid, DT);
+    expect(p.vy).toBeLessThan(0); // moving up
+  });
+
+  it('allows a coyote jump shortly after leaving the ground', () => {
+    const c = cfg();
+    const p = createPlayer(10, 0, c);
+    for (let i = 0; i < 120; i++) updatePlayer(p, idle(), c, grid, DT);
+    p.grounded = false;           // simulate just walked off an edge
+    p.coyote = c.coyoteFrames;
+    updatePlayer(p, press(), c, grid, DT);
+    expect(p.vy).toBeLessThan(0);
+  });
+
+  it('cuts ascent when the jump button is released (variable height)', () => {
+    const c = cfg();
+    const p = createPlayer(10, 0, c);
+    p.vy = -150;
+    p.jumpHeldPrev = true;
+    updatePlayer(p, idle(), c, grid, DT); // released this frame, still ascending
+    expect(p.vy).toBeGreaterThan(-150 * c.jumpCutMult - 50); // roughly halved (plus gravity)
+    expect(p.vy).toBeLessThan(0);
+  });
+
+  it('wall-slides: caps fall speed when pushing into a wall', () => {
+    const c = cfg();
+    const p = createPlayer(10, 5, c); // x=10 → left edge flush to col 0 wall
+    p.vy = c.vFallMax;
+    updatePlayer(p, idle({ moveX: -1 }), c, wallGridP, DT);
+    expect(p.vy).toBeLessThanOrEqual(c.vSlide + 0.001);
+    expect(p.state).toBe('WALLSLIDE');
+  });
+
+  it('wall-jumps away from the wall', () => {
+    const c = cfg();
+    const p = createPlayer(10, 5, c);
+    p.vy = 10;
+    updatePlayer(p, press({ moveX: -1 }), c, wallGridP, DT);
+    expect(p.vy).toBeLessThan(0);  // upward
+    expect(p.vx).toBeGreaterThan(0); // pushed right, away from left wall
+  });
+
+  it('applies reduced gravity near the apex', () => {
+    const c = cfg();
+    const slow = createPlayer(10, 0, c); slow.vy = 0;           // |vy| < threshold
+    const fast = createPlayer(10, 0, c); fast.vy = c.vFallMax;  // |vy| ≫ threshold
+    updatePlayer(slow, idle(), c, grid, DT);
+    const fastBefore = fast.vy;
+    updatePlayer(fast, idle(), c, grid, DT);
+    const slowGain = slow.vy - 0;
+    const fastGain = Math.min(fast.vy, c.vFallMax) - fastBefore; // ~0 (capped) — compare against full step
+    expect(slowGain).toBeLessThan(c.gravity * DT); // reduced, not full gravity
+  });
+
+  it('reports GROUNDED state on the floor', () => {
+    const p = createPlayer(10, 0, cfg());
+    for (let i = 0; i < 120; i++) updatePlayer(p, idle(), cfg(), grid, DT);
+    expect(p.state).toBe('GROUNDED');
+  });
+});

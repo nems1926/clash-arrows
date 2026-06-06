@@ -1,4 +1,4 @@
-import { resolveX, resolveY, wrap } from './tilemap.js';
+import { resolveX, resolveY, wallContact, wrap } from './tilemap.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const sign = (v) => (v < 0 ? -1 : v > 0 ? 1 : 0);
@@ -20,7 +20,11 @@ export function createPlayer(x, y, cfg) {
 }
 
 export function updatePlayer(p, intent, cfg, grid, dt) {
-  // horizontal accel / decel
+  // 1. timers (one fixed step == one frame)
+  p.coyote = p.grounded ? cfg.coyoteFrames : p.coyote - 1;
+  p.buffer = intent.jumpPressed ? cfg.bufferFrames : p.buffer - 1;
+
+  // 2. horizontal accel / decel
   if (intent.moveX !== 0) {
     p.vx = clamp(p.vx + intent.moveX * cfg.accel * dt, -cfg.vMax, cfg.vMax);
     p.facing = intent.moveX;
@@ -29,10 +33,39 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
     p.vx = Math.abs(p.vx) <= drop ? 0 : p.vx - sign(p.vx) * drop;
   }
 
-  // gravity + fall cap
-  p.vy = Math.min(p.vy + cfg.gravity * dt, cfg.vFallMax);
+  // 3. wall contact (pre-move probe)
+  const wc = wallContact(grid, p.x, p.y, p.w, p.h, cfg.TILE);
 
-  // move + collide (separated axes)
+  // 4. jump (ground / coyote) or wall-jump
+  if (p.buffer > 0) {
+    if (p.grounded || p.coyote > 0) {
+      p.vy = cfg.vJump;
+      p.buffer = 0;
+      p.coyote = 0;
+      p.grounded = false;
+    } else if (wc !== 0) {
+      p.vy = cfg.wallJumpY;
+      p.vx = -wc * cfg.wallJumpX;
+      p.buffer = 0;
+    }
+  }
+
+  // 5. variable jump height: cut ascent on release
+  if (p.jumpHeldPrev && !intent.jumpHeld && p.vy < 0) {
+    p.vy *= cfg.jumpCutMult;
+  }
+
+  // 6. gravity with apex hang
+  let g = cfg.gravity;
+  if (Math.abs(p.vy) < cfg.apexVyThreshold) g *= cfg.apexGravityMult;
+  p.vy = Math.min(p.vy + g * dt, cfg.vFallMax);
+
+  // 7. wall slide: cap fall when pushing into a wall while airborne
+  if (!p.grounded && wc !== 0 && intent.moveX === wc && p.vy > 0) {
+    p.vy = Math.min(p.vy, cfg.vSlide);
+  }
+
+  // 8. move + collide (separated axes)
   p.prevBottom = p.y + p.h;
   const rx = resolveX(grid, p.x, p.y, p.w, p.h, p.vx * dt, cfg.TILE);
   p.x = rx.x;
@@ -42,10 +75,15 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
   p.grounded = ry.grounded;
   if (ry.hit) p.vy = 0;
 
-  // toroidal wrap
+  // 9. toroidal wrap
   p.x = wrap(p.x, cfg.W);
   p.y = wrap(p.y, cfg.H);
 
+  // 10. FSM state + remembered inputs
+  if (p.grounded) p.state = 'GROUNDED';
+  else if (wc !== 0 && intent.moveX === wc && p.vy > 0) p.state = 'WALLSLIDE';
+  else p.state = 'AIRBORNE';
+  p.wallDir = wc;
   p.jumpHeldPrev = intent.jumpHeld;
   return p;
 }
