@@ -18,6 +18,14 @@ describe('parseArena destructibles', () => {
   });
 });
 
+describe('parseArena pickup spawns', () => {
+  it('collects P cells into pickupSpawns (as empty tiles)', () => {
+    const { grid, pickupSpawns } = parseArena(['..P..']);
+    expect(pickupSpawns).toContainEqual({ col: 2, row: 0 });
+    expect(grid[0][2]).toBe(0); // EMPTY, walkable
+  });
+});
+
 describe('ARENA_A', () => {
   it('is 18 rows of 32 columns', () => {
     expect(ARENA_A).toHaveLength(18);

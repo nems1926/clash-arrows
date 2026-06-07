@@ -25,6 +25,7 @@ export const ARENA_A = [
 export function parseArena(ascii) {
   const grid = [];
   const spawns = [];
+  const pickupSpawns = [];
   for (let r = 0; r < ascii.length; r++) {
     const row = [];
     for (let c = 0; c < ascii[r].length; c++) {
@@ -35,9 +36,10 @@ export function parseArena(ascii) {
       else {
         row.push(EMPTY);
         if (ch === 'S') spawns.push({ col: c, row: r });
+        else if (ch === 'P') pickupSpawns.push({ col: c, row: r });
       }
     }
     grid.push(row);
   }
-  return { grid, spawns };
+  return { grid, spawns, pickupSpawns };
 }
