@@ -5,10 +5,11 @@ const COL = {
   bg: '#0d1b2a',
   solid: '#6b7280',
   oneway: '#38bdf8',
-  player: '#4ade80',
   arrow: '#fcd34d',
   aim: '#f87171',
 };
+
+export const PLAYER_COLORS = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24']; // P1..P4
 
 export function drawWorld(grid, players) {
   background(COL.bg);
@@ -34,7 +35,7 @@ export function drawWorld(grid, players) {
   // players + ghosts (skip the dead)
   for (const player of players) {
     if (player.state === 'DEAD') continue;
-    fill(COL.player);
+    fill(PLAYER_COLORS[player.index % PLAYER_COLORS.length]);
     for (const dx of [-W, 0, W]) {
       for (const dy of [-H, 0, H]) {
         rect(player.x + dx, player.y + dy, player.w, player.h);

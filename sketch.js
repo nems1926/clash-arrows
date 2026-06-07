@@ -3,6 +3,7 @@ import { ARENA_A, parseArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeIntent } from './input.js';
 import { drawWorld, drawArrows } from './render.js';
+import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow, release } from './arrow.js';
 import { canShoot, spendArrow, addArrow } from './quiver.js';
@@ -176,6 +177,7 @@ if (!navigator.gpu) {
 
     drawWorld(grid, players);
     drawArrows(arrowPool);
+    drawHud(players);
     if (game.state === 'ROUND_END') {
       fill('#fcd34d');
       textFont('monospace');
