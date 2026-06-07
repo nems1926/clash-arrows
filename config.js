@@ -36,6 +36,7 @@ export const DEFAULT_CONFIG = {
   dodgeCooldown: 24,      // frames anti-spam
   selfArmFrames: 10,      // frames délai d'armement de l'auto-touche
   stompBounceVy: -120,    // px/s   rebond vertical du stompeur
+  explosionRadius: 24,    // px     rayon de l'explosion de bombe
   roundsToWin: 5,         // manches pour gagner le match
   // mirror the geometry so updatePlayer needs only cfg
   TILE, W, H, PLAYER_W, PLAYER_H,

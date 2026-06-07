@@ -1,5 +1,6 @@
 import { SOLID, ONEWAY, DESTRUCT } from './tilemap.js';
 import { W, H, SCALE, TILE } from './config.js';
+import { ARROW_TYPES } from './arrow.js';
 
 const COL = {
   bg: '#0d1b2a',
@@ -62,14 +63,27 @@ export function drawArrows(arrows) {
   translate(-W * SCALE / 2, -H * SCALE / 2);
   scale(SCALE);
   noStroke();
-  fill(COL.arrow);
   for (const a of arrows) {
     if (!a.active) continue;
+    fill(ARROW_TYPES[a.type]?.color || COL.arrow);
     for (const dx of [-W, 0, W]) {
       for (const dy of [-H, 0, H]) {
         rect(a.x + dx, a.y + dy, a.w, a.h);
       }
     }
+  }
+  pop();
+}
+
+export function drawExplosions(explosions) {
+  push();
+  translate(-W * SCALE / 2, -H * SCALE / 2);
+  scale(SCALE);
+  noStroke();
+  for (const e of explosions) {
+    const a = Math.max(0, e.life / 12);
+    fill(255, 200, 80, 200 * a);
+    circle(e.x, e.y, e.r * 2);
   }
   pop();
 }

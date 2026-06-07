@@ -2,12 +2,13 @@ import { DEFAULT_CONFIG, W, H, SCALE } from './config.js';
 import { ARENA_A, parseArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeIntent } from './input.js';
-import { drawWorld, drawArrows } from './render.js';
+import { drawWorld, drawArrows, drawExplosions } from './render.js';
 import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow, release } from './arrow.js';
+import { EMPTY } from './tilemap.js';
 import { canShoot, shootType, addArrow } from './quiver.js';
-import { toroidalOverlap, canCatch, arrowLethal, isStomp } from './combat.js';
+import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
 import { createGame, advance } from './game.js';
 
@@ -28,6 +29,7 @@ if (!navigator.gpu) {
   const FIXED = 1 / 60;
   let acc = 0;
   const arrowPool = createPool(32);
+  const explosions = []; // transient visual flashes: { x, y, r, life }
   const game = createGame();                       // starts in 'LOBBY'
   const joins = { gamepads: new Set(), keyboard: false };
   let players = [];
@@ -49,6 +51,16 @@ if (!navigator.gpu) {
       p.prevKeys = freshKeys();
       return p;
     });
+  }
+
+  function explodeAt(x, y) {
+    for (const p of playersInRadius(players, x, y, cfg.explosionRadius, cfg.W, cfg.H)) {
+      if (p.state !== 'DEAD' && !isInvulnerable(p)) killOrShield(p);
+    }
+    for (const { r, c } of destructibleCellsInRadius(grid, x, y, cfg.explosionRadius, cfg.TILE, cfg.W, cfg.H)) {
+      grid[r][c] = EMPTY;
+    }
+    explosions.push({ x, y, r: cfg.explosionRadius, life: 12 });
   }
 
   // Reset all players to their spawn for a new round; recycle every arrow.
@@ -111,6 +123,11 @@ if (!navigator.gpu) {
     }
     for (const a of arrowPool) updateArrow(a, cfg, grid, FIXED);
 
+    // terrain-triggered bomb explosions
+    for (const a of arrowPool) {
+      if (a.active && a.state === 'EXPLODE') { explodeAt(a.x, a.y); a.active = false; }
+    }
+
     // arrow -> player resolution: pickup / catch / death
     for (const a of arrowPool) {
       if (!a.active) continue;
@@ -122,7 +139,11 @@ if (!navigator.gpu) {
         if (!toroidalOverlap(pbox, abox, cfg.W, cfg.H)) continue;
         if (a.state === 'STUCK') { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (canCatch(p)) { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
-        else if (arrowLethal(a, p.index, cfg)) { p.state = 'DEAD'; p.vx = 0; p.vy = 0; a.active = false; }
+        else if (arrowLethal(a, p.index, cfg)) {
+          if (a.type === 'bomb') explodeAt(a.x, a.y);
+          else killOrShield(p);
+          a.active = false;
+        }
       }
     }
 
@@ -131,7 +152,7 @@ if (!navigator.gpu) {
       if (s.state === 'DEAD') continue;
       for (const v of players) {
         if (v === s || v.state === 'DEAD') continue;
-        if (isStomp(s, v)) { v.state = 'DEAD'; v.vx = 0; v.vy = 0; s.vy = cfg.stompBounceVy; }
+        if (isStomp(s, v)) { killOrShield(v); s.vy = cfg.stompBounceVy; }
       }
     }
   }
@@ -176,8 +197,12 @@ if (!navigator.gpu) {
       acc -= FIXED;
     }
 
+    for (let i = explosions.length - 1; i >= 0; i--) {
+      if (--explosions[i].life <= 0) explosions.splice(i, 1);
+    }
     drawWorld(grid, players);
     drawArrows(arrowPool);
+    drawExplosions(explosions);
     drawHud(players);
     if (game.state === 'ROUND_END') {
       fill('#fcd34d');
