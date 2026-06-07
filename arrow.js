@@ -37,3 +37,20 @@ export function updateArrow(a, cfg, grid, dt) {
   }
   return a;
 }
+
+export function createPool(n) {
+  return Array.from({ length: n }, () => createArrow());
+}
+
+// Returns an inactive arrow marked active, or null if the pool is exhausted.
+export function acquire(pool) {
+  for (const a of pool) {
+    if (!a.active) { a.active = true; return a; }
+  }
+  return null;
+}
+
+export function release(pool, a) {
+  a.active = false;
+  a.state = 'STUCK';
+}

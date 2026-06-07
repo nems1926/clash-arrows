@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createArrow, spawnArrow, updateArrow } from '../arrow.js';
+import { createArrow, spawnArrow, updateArrow, createPool, acquire, release } from '../arrow.js';
 import { DEFAULT_CONFIG } from '../config.js';
 
 const DT = 1 / 60;
@@ -42,5 +42,17 @@ describe('arrow ballistics', () => {
     updateArrow(a, c, emptyGrid, DT);
     expect(a.x).toBeGreaterThanOrEqual(0);
     expect(a.x).toBeLessThan(c.W);
+  });
+});
+
+describe('arrow pool', () => {
+  it('reuses released arrows instead of growing', () => {
+    const pool = createPool(2);
+    const a = acquire(pool);
+    const b = acquire(pool);
+    expect(acquire(pool)).toBe(null); // exhausted
+    release(pool, a);
+    expect(acquire(pool)).toBe(a);    // recycled
+    expect(b.active).toBe(true);
   });
 });
