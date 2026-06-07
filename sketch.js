@@ -55,6 +55,7 @@ if (!navigator.gpu) {
       for (const a of arrowPool) {
         if (!a.active) continue;
         for (const p of players) {
+          if (!a.active) break; // arrow consumed — stop checking further players
           if (p.state === 'DEAD') continue;
           const pbox = { x: p.x, y: p.y, w: p.w, h: p.h };
           const abox = { x: a.x, y: a.y, w: a.w, h: a.h };
