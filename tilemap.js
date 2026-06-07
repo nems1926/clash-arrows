@@ -1,6 +1,7 @@
 export const EMPTY = 0;
 export const SOLID = 1;
 export const ONEWAY = 2;
+export const DESTRUCT = 3;
 
 export function wrap(value, max) {
   return ((value % max) + max) % max;
@@ -18,6 +19,13 @@ export function isSolidAt(grid, col, row) {
   return cellAt(grid, col, row) === SOLID;
 }
 
+// Solid and destructible tiles both block movement; destructibles differ only
+// in that explosions can remove them.
+export function isBlocking(grid, col, row) {
+  const cell = cellAt(grid, col, row);
+  return cell === SOLID || cell === DESTRUCT;
+}
+
 // Move an AABB (top-left x,y, size w,h) along X by dx, snapping to solids.
 export function resolveX(grid, x, y, w, h, dx, TILE) {
   let nx = x + dx;
@@ -26,23 +34,29 @@ export function resolveX(grid, x, y, w, h, dx, TILE) {
   let hit = false;
   let wallDir = 0;
   if (dx > 0) {
-    const col = Math.floor((nx + w - 0.001) / TILE);
-    for (let r = rowStart; r <= rowEnd; r++) {
-      if (isSolidAt(grid, col, r)) {
-        nx = col * TILE - w;
-        hit = true;
-        wallDir = 1;
-        break;
+    const colStart = Math.floor((x + w) / TILE);
+    const colEnd = Math.floor((nx + w - 0.001) / TILE);
+    outer: for (let col = colStart; col <= colEnd; col++) {
+      for (let r = rowStart; r <= rowEnd; r++) {
+        if (isBlocking(grid, col, r)) {
+          nx = col * TILE - w;
+          hit = true;
+          wallDir = 1;
+          break outer;
+        }
       }
     }
   } else if (dx < 0) {
-    const col = Math.floor(nx / TILE);
-    for (let r = rowStart; r <= rowEnd; r++) {
-      if (isSolidAt(grid, col, r)) {
-        nx = (col + 1) * TILE;
-        hit = true;
-        wallDir = -1;
-        break;
+    const colStart = Math.floor(x / TILE);
+    const colEnd = Math.floor(nx / TILE);
+    outer: for (let col = colStart; col >= colEnd; col--) {
+      for (let r = rowStart; r <= rowEnd; r++) {
+        if (isBlocking(grid, col, r)) {
+          nx = (col + 1) * TILE;
+          hit = true;
+          wallDir = -1;
+          break outer;
+        }
       }
     }
   }
@@ -58,27 +72,33 @@ export function resolveY(grid, x, y, w, h, dy, TILE, dropThrough, prevBottom) {
   let hit = false;
   let grounded = false;
   if (dy > 0) {
-    const row = Math.floor((ny + h - 0.001) / TILE);
-    const tileTop = row * TILE;
-    for (let c = colStart; c <= colEnd; c++) {
-      const cell = cellAt(grid, c, row);
-      const solid = cell === SOLID;
-      // one-way: only when descending, not dropping, and we were above the top
-      const oneWay = cell === ONEWAY && !dropThrough && prevBottom <= tileTop + 0.001;
-      if (solid || oneWay) {
-        ny = tileTop - h;
-        hit = true;
-        grounded = true;
-        break;
+    const rowStart2 = Math.floor((y + h) / TILE);
+    const rowEnd2 = Math.floor((ny + h - 0.001) / TILE);
+    outer: for (let row = rowStart2; row <= rowEnd2; row++) {
+      const tileTop = row * TILE;
+      for (let c = colStart; c <= colEnd; c++) {
+        const cell = cellAt(grid, c, row);
+        const solid = cell === SOLID || cell === DESTRUCT;
+        // one-way: only when descending, not dropping, and we were above the top
+        const oneWay = cell === ONEWAY && !dropThrough && prevBottom <= tileTop + 0.001;
+        if (solid || oneWay) {
+          ny = tileTop - h;
+          hit = true;
+          grounded = true;
+          break outer;
+        }
       }
     }
   } else if (dy < 0) {
-    const row = Math.floor(ny / TILE);
-    for (let c = colStart; c <= colEnd; c++) {
-      if (cellAt(grid, c, row) === SOLID) {
-        ny = (row + 1) * TILE;
-        hit = true;
-        break;
+    const rowStart2 = Math.floor(y / TILE);
+    const rowEnd2 = Math.floor(ny / TILE);
+    outer: for (let row = rowStart2; row >= rowEnd2; row--) {
+      for (let c = colStart; c <= colEnd; c++) {
+        if (isBlocking(grid, c, row)) {
+          ny = (row + 1) * TILE;
+          hit = true;
+          break outer;
+        }
       }
     }
   }
@@ -94,8 +114,8 @@ export function wallContact(grid, x, y, w, h, TILE) {
   let right = false;
   let left = false;
   for (let r = r0; r <= r1; r++) {
-    if (isSolidAt(grid, colR, r)) right = true;
-    if (isSolidAt(grid, colL, r)) left = true;
+    if (isBlocking(grid, colR, r)) right = true;
+    if (isBlocking(grid, colL, r)) left = true;
   }
   if (right) return 1;
   if (left) return -1;
@@ -114,7 +134,7 @@ export function arrowBoxHitsTile(grid, x, y, w, h, TILE) {
   for (let r = r0; r <= r1; r++) {
     for (let c = c0; c <= c1; c++) {
       const cell = cellAt(grid, c, r);
-      if (cell === SOLID || cell === ONEWAY) return true;
+      if (cell === SOLID || cell === ONEWAY || cell === DESTRUCT) return true;
     }
   }
   return false;
