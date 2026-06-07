@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aabbOverlap, toroidalOverlap, canCatch, isArmed, arrowLethal } from '../combat.js';
+import { aabbOverlap, toroidalOverlap, canCatch, isArmed, arrowLethal, isStomp } from '../combat.js';
 import { DEFAULT_CONFIG } from '../config.js';
 
 const cfg = () => ({ ...DEFAULT_CONFIG });
@@ -36,5 +36,22 @@ describe('combat predicates', () => {
   it('your own arrow is lethal only after arming', () => {
     expect(arrowLethal({ owner: 0, ageFrames: 0 }, 0, cfg())).toBe(false);
     expect(arrowLethal({ owner: 0, ageFrames: 99 }, 0, cfg())).toBe(true);
+  });
+});
+
+describe('stomp', () => {
+  // victim AABB at (50,50,8,12) → top edge y=50
+  const victim = { x: 50, y: 50, w: 8, h: 12, vy: 0 };
+  it('is a stomp when falling onto the head from above with overlap', () => {
+    const stomper = { x: 51, y: 40, w: 8, h: 12, vy: 80, prevBottom: 49 };
+    expect(isStomp(stomper, victim)).toBe(true);
+  });
+  it('is not a stomp when moving up', () => {
+    const stomper = { x: 51, y: 40, w: 8, h: 12, vy: -80, prevBottom: 49 };
+    expect(isStomp(stomper, victim)).toBe(false);
+  });
+  it('is not a stomp on a side hit (no vertical-from-above)', () => {
+    const stomper = { x: 51, y: 50, w: 8, h: 12, vy: 80, prevBottom: 62 };
+    expect(isStomp(stomper, victim)).toBe(false);
   });
 });

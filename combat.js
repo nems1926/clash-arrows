@@ -31,3 +31,12 @@ export function arrowLethal(arrow, target, cfg) {
   if (arrow.owner === target) return isArmed(arrow, cfg);
   return true; // opponents' arrows always kill (free-for-all)
 }
+
+// stomper kills victim if descending and its previous bottom was at/above the
+// victim's head, with horizontal overlap (vertical-from-above contact).
+export function isStomp(stomper, victim) {
+  if (stomper.vy <= 0) return false;
+  const hOverlap = stomper.x < victim.x + victim.w && stomper.x + stomper.w > victim.x;
+  if (!hOverlap) return false;
+  return stomper.prevBottom <= victim.y + 1;
+}
