@@ -18,3 +18,16 @@ export function toroidalOverlap(a, b, W, H) {
   const by = wrappedNear(a.y, b.y, H);
   return aabbOverlap(a, { ...b, x: bx, y: by });
 }
+
+// A dodging player in the invuln window catches arrows instead of dying.
+export const canCatch = (player) =>
+  player.state === 'DODGING' && player.invulnTime > 0;
+
+// Your own arrow only becomes dangerous after an arming delay.
+export const isArmed = (arrow, cfg) => arrow.ageFrames >= cfg.selfArmFrames;
+
+// Is this arrow lethal to player index `target`?
+export function arrowLethal(arrow, target, cfg) {
+  if (arrow.owner === target) return isArmed(arrow, cfg);
+  return true; // opponents' arrows always kill (free-for-all)
+}
