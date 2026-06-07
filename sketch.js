@@ -5,7 +5,8 @@ import { readKeys, computeIntent } from './input.js';
 import { drawWorld, drawArrows } from './render.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow } from './arrow.js';
-import { canShoot, spendArrow } from './quiver.js';
+import { canShoot, spendArrow, addArrow } from './quiver.js';
+import { toroidalOverlap } from './combat.js';
 
 if (!navigator.gpu) {
   document.body.innerHTML =
@@ -44,6 +45,15 @@ if (!navigator.gpu) {
         }
       }
       for (const a of arrowPool) updateArrow(a, cfg, grid, FIXED);
+      // pickup: walking over a STUCK arrow refills the quiver
+      const pbox = { x: player.x, y: player.y, w: player.w, h: player.h };
+      for (const a of arrowPool) {
+        if (a.active && a.state === 'STUCK' &&
+            toroidalOverlap(pbox, { x: a.x, y: a.y, w: a.w, h: a.h }, cfg.W, cfg.H)) {
+          addArrow(player);
+          a.active = false; // back to pool
+        }
+      }
       prevKeys = keys;
       acc -= FIXED;
     }
