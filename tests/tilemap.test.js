@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wrap, cellAt, isSolidAt, arrowHitsTile, SOLID, ONEWAY } from '../tilemap.js';
+import { wrap, cellAt, isSolidAt, arrowBoxHitsTile, SOLID, ONEWAY } from '../tilemap.js';
 
 const grid = [
   [0, 1, 0],
@@ -127,22 +127,22 @@ describe('wallContact', () => {
   });
 });
 
-describe('arrowHitsTile', () => {
+describe('arrowBoxHitsTile', () => {
   const grid = [
     [0, 0, 0],
     [0, 1, 2], // (col1=solid, col2=oneway)
     [0, 0, 0],
   ];
-  it('detects a solid tile at the point', () => {
-    expect(arrowHitsTile(grid, 15, 15, 10)).toBe(true); // col1,row1
+  it('detects a solid tile under the arrow box', () => {
+    expect(arrowBoxHitsTile(grid, 15, 15, 6, 2, 10)).toBe(true); // col1,row1
   });
-  it('detects a one-way tile at the point (arrows stick to anything)', () => {
-    expect(arrowHitsTile(grid, 25, 15, 10)).toBe(true); // col2,row1
+  it('detects a one-way tile (arrows stick to anything)', () => {
+    expect(arrowBoxHitsTile(grid, 25, 15, 6, 2, 10)).toBe(true); // col2,row1
   });
   it('returns false in empty space', () => {
-    expect(arrowHitsTile(grid, 5, 5, 10)).toBe(false);
+    expect(arrowBoxHitsTile(grid, 4, 4, 6, 2, 10)).toBe(false);
   });
   it('reads through the toroidal seam (modulo lookup)', () => {
-    expect(arrowHitsTile(grid, 15 + 30, 15, 10)).toBe(true); // wraps to col1
+    expect(arrowBoxHitsTile(grid, 15 + 30, 15, 6, 2, 10)).toBe(true); // wraps to col1
   });
 });

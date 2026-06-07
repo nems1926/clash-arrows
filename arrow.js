@@ -1,4 +1,4 @@
-import { arrowHitsTile, wrap } from './tilemap.js';
+import { arrowBoxHitsTile, wrap } from './tilemap.js';
 
 export function createArrow() {
   return {
@@ -27,13 +27,24 @@ export function updateArrow(a, cfg, grid, dt) {
   if (!a.active || a.state !== 'IN_FLIGHT') return a;
   a.ageFrames++;
   a.vy += cfg.arrowGravity * dt;
-  a.x += a.vx * dt;
-  a.y += a.vy * dt;
-  a.x = wrap(a.x, cfg.W);
-  a.y = wrap(a.y, cfg.H);
-  if (arrowHitsTile(grid, a.x, a.y, cfg.TILE)) {
-    a.state = 'STUCK';
-    a.vx = 0; a.vy = 0;
+  // Sub-step the move (~1px increments) so a fast arrow plants flush against the
+  // surface it hits instead of overshooting and burying its AABB inside the tile
+  // (which left it unpickable). On contact, rest at the last clear position.
+  const dx = a.vx * dt;
+  const dy = a.vy * dt;
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy)));
+  const sx = dx / steps;
+  const sy = dy / steps;
+  for (let i = 0; i < steps; i++) {
+    const nx = wrap(a.x + sx, cfg.W);
+    const ny = wrap(a.y + sy, cfg.H);
+    if (arrowBoxHitsTile(grid, nx, ny, a.w, a.h, cfg.TILE)) {
+      a.state = 'STUCK';
+      a.vx = 0; a.vy = 0;
+      return a; // rest at the last clear position (a.x, a.y)
+    }
+    a.x = nx;
+    a.y = ny;
   }
   return a;
 }

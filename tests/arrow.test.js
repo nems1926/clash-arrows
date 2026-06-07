@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createArrow, spawnArrow, updateArrow, createPool, acquire, release } from '../arrow.js';
+import { arrowBoxHitsTile } from '../tilemap.js';
 import { DEFAULT_CONFIG } from '../config.js';
 
 const DT = 1 / 60;
@@ -12,7 +13,7 @@ describe('arrow ballistics', () => {
     spawnArrow(a, 100, 50, 1, 0, 0, cfg());
     expect(a.state).toBe('IN_FLIGHT');
     expect(a.active).toBe(true);
-    expect(a.vx).toBeCloseTo(220, 5);
+    expect(a.vx).toBeCloseTo(DEFAULT_CONFIG.arrowSpeed, 5);
     expect(a.vy).toBeCloseTo(0, 5);
     expect(a.owner).toBe(0);
   });
@@ -42,6 +43,21 @@ describe('arrow ballistics', () => {
     updateArrow(a, c, emptyGrid, DT);
     expect(a.x).toBeGreaterThanOrEqual(0);
     expect(a.x).toBeLessThan(c.W);
+  });
+
+  it('rests against the floor without burying (pickup-able)', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    for (let col = 0; col < 32; col++) grid[10][col] = 1; // floor top at y=100
+    const a = createArrow();
+    spawnArrow(a, 100, 95, 0, 1, 0, c); // fired straight down at the floor
+    for (let i = 0; i < 60 && a.state === 'IN_FLIGHT'; i++) updateArrow(a, c, grid, DT);
+    expect(a.state).toBe('STUCK');
+    // not buried: the resting AABB overlaps no solid tile
+    expect(arrowBoxHitsTile(grid, a.x, a.y, a.w, a.h, c.TILE)).toBe(false);
+    // and it rests flush on the floor surface (bottom ≈ y=100), not sunk in
+    expect(a.y + a.h).toBeLessThanOrEqual(100.001);
+    expect(a.y + a.h).toBeGreaterThan(98);
   });
 });
 

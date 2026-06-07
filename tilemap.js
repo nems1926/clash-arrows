@@ -102,9 +102,20 @@ export function wallContact(grid, x, y, w, h, TILE) {
   return 0;
 }
 
-// Arrows stick to any non-empty tile (solid OR one-way). Point-in-grid test,
-// modulo lookup so it reads correctly across the toroidal seam.
-export function arrowHitsTile(grid, x, y, TILE) {
-  const cell = cellAt(grid, Math.floor(x / TILE), Math.floor(y / TILE));
-  return cell === SOLID || cell === ONEWAY;
+// Arrows stick to any non-empty tile (solid OR one-way). Tests the arrow's full
+// AABB (top-left x,y, size w×h) against the grid — modulo lookup so it reads
+// correctly across the toroidal seam. Using the whole box (not just one corner)
+// means the leading edge is detected, so arrows don't bury into the ground.
+export function arrowBoxHitsTile(grid, x, y, w, h, TILE) {
+  const c0 = Math.floor(x / TILE);
+  const c1 = Math.floor((x + w - 0.001) / TILE);
+  const r0 = Math.floor(y / TILE);
+  const r1 = Math.floor((y + h - 0.001) / TILE);
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      const cell = cellAt(grid, c, r);
+      if (cell === SOLID || cell === ONEWAY) return true;
+    }
+  }
+  return false;
 }
