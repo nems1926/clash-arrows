@@ -1,4 +1,5 @@
 import { resolveX, resolveY, wallContact, wrap } from './tilemap.js';
+import { aimVector } from './aim.js';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const sign = (v) => (v < 0 ? -1 : v > 0 ? 1 : 0);
@@ -16,6 +17,10 @@ export function createPlayer(x, y, cfg) {
     facing: 1,
     prevBottom: y + cfg.PLAYER_H,
     state: 'AIRBORNE',
+    quiver: cfg.quiverStart,
+    aimDir: { x: 1, y: 0 },
+    index: 0,
+    roundsWon: 0,
   };
 }
 
@@ -85,5 +90,8 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
   else p.state = 'AIRBORNE';
   p.wallDir = wc;
   p.jumpHeldPrev = intent.jumpHeld;
+
+  // aim follows the held direction (default = facing)
+  p.aimDir = aimVector({ moveX: intent.moveX, up: intent.up, down: intent.down }, p.facing);
   return p;
 }

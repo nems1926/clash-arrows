@@ -24,4 +24,15 @@ describe('computeIntent', () => {
   it('passes down through', () => {
     expect(computeIntent({ ...none, down: true }, none).down).toBe(true);
   });
+  it('exposes up and shoot/dodge edges', () => {
+    const prev = { up: false, shoot: false, dodge: false };
+    const now = computeIntent({ ...none, up: true, shoot: true, dodge: true }, { ...prev });
+    expect(now.up).toBe(true);
+    expect(now.shootPressed).toBe(true);
+    expect(now.dodgePressed).toBe(true);
+  });
+  it('does not re-fire shoot while held', () => {
+    const now = computeIntent({ ...none, shoot: true }, { shoot: true });
+    expect(now.shootPressed).toBe(false);
+  });
 });

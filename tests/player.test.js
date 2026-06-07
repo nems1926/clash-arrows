@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createPlayer, updatePlayer } from '../player.js';
 import { DEFAULT_CONFIG } from '../config.js';
+import { aimVector } from '../aim.js';
 
 const DT = 1 / 60;
 const cfg = () => ({ ...DEFAULT_CONFIG });
@@ -128,5 +129,21 @@ describe('player jump & states', () => {
     const p = createPlayer(10, 0, cfg());
     for (let i = 0; i < 120; i++) updatePlayer(p, idle(), cfg(), grid, DT);
     expect(p.state).toBe('GROUNDED');
+  });
+});
+
+describe('player aim & quiver', () => {
+  it('starts with a full quiver and faces right', () => {
+    const p = createPlayer(10, 0, cfg());
+    expect(p.quiver).toBe(DEFAULT_CONFIG.quiverStart);
+    expect(p.facing).toBe(1);
+  });
+  it('updates aimDir from the held direction', () => {
+    const c = cfg();
+    const p = createPlayer(10, 0, c);
+    updatePlayer(p, { moveX: 1, up: true, jumpHeld: false, jumpPressed: false, down: false }, c, grid, DT);
+    const expected = aimVector({ moveX: 1, up: true, down: false }, p.facing);
+    expect(p.aimDir.x).toBeCloseTo(expected.x, 5);
+    expect(p.aimDir.y).toBeCloseTo(expected.y, 5);
   });
 });
