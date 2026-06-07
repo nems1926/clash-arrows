@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG, W, H, SCALE } from './config.js';
-import { ARENA_A, parseArena } from './arena.js';
+import { ARENA_A, ARENAS, parseArena, pickRandomArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeIntent } from './input.js';
 import { drawWorld, drawArrows, drawExplosions, drawPickup } from './render.js';
@@ -24,7 +24,7 @@ if (!navigator.gpu) {
   noSmooth();
 
   const cfg = { ...DEFAULT_CONFIG };
-  const { grid, spawns, pickupSpawns } = parseArena(ARENA_A);
+  let { grid, spawns, pickupSpawns } = parseArena(ARENA_A);
   const dbg = createDebug(cfg);
 
   const FIXED = 1 / 60;
@@ -90,8 +90,16 @@ if (!navigator.gpu) {
     }
   }
 
+  function loadRandomArena() {
+    const parsed = parseArena(pickRandomArena(Math.random)); // fresh grid → destructibles regenerate
+    grid = parsed.grid;
+    spawns = parsed.spawns;
+    pickupSpawns = parsed.pickupSpawns;
+  }
+
   // Reset all players to their spawn for a new round; recycle every arrow.
   function respawnAll() {
+    loadRandomArena();
     for (const a of arrowPool) release(arrowPool, a);
     for (const p of players) {
       const { x, y } = spawnFor(p.index);
