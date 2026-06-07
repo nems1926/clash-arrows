@@ -154,12 +154,14 @@ describe('destructible tiles block like solids', () => {
     expect(DESTRUCT).toBe(3);
   });
   it('blocks rightward movement (resolveX stops at it)', () => {
-    const r = resolveX(grid, 2, 12, 8, 8, 20, 10); // 8x8 box at (2,12) moving right into col1
+    // 8x8 box at (2,12) moving right 4px into col1 (a <1-tile step)
+    const r = resolveX(grid, 2, 12, 8, 8, 4, 10);
     expect(r.hit).toBe(true);
     expect(r.x).toBeLessThanOrEqual(10 - 8 + 0.001); // snapped left of the tile
   });
   it('blocks downward movement (resolveY lands on it)', () => {
-    const r = resolveY(grid, 11, 0, 8, 8, 20, 10, false, 8);
+    // 8x8 box at (11,0) moving down 4px onto the col1,row1 destructible
+    const r = resolveY(grid, 11, 0, 8, 8, 4, 10, false, 8);
     expect(r.grounded).toBe(true);
   });
   it('wallContact detects it', () => {

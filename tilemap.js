@@ -33,30 +33,26 @@ export function resolveX(grid, x, y, w, h, dx, TILE) {
   const rowEnd = Math.floor((y + h - 0.001) / TILE);
   let hit = false;
   let wallDir = 0;
+  // Per-step moves never exceed one tile (velocities are capped, see config),
+  // so checking the destination column is enough — no sweep needed.
   if (dx > 0) {
-    const colStart = Math.floor((x + w) / TILE);
-    const colEnd = Math.floor((nx + w - 0.001) / TILE);
-    outer: for (let col = colStart; col <= colEnd; col++) {
-      for (let r = rowStart; r <= rowEnd; r++) {
-        if (isBlocking(grid, col, r)) {
-          nx = col * TILE - w;
-          hit = true;
-          wallDir = 1;
-          break outer;
-        }
+    const col = Math.floor((nx + w - 0.001) / TILE);
+    for (let r = rowStart; r <= rowEnd; r++) {
+      if (isBlocking(grid, col, r)) {
+        nx = col * TILE - w;
+        hit = true;
+        wallDir = 1;
+        break;
       }
     }
   } else if (dx < 0) {
-    const colStart = Math.floor(x / TILE);
-    const colEnd = Math.floor(nx / TILE);
-    outer: for (let col = colStart; col >= colEnd; col--) {
-      for (let r = rowStart; r <= rowEnd; r++) {
-        if (isBlocking(grid, col, r)) {
-          nx = (col + 1) * TILE;
-          hit = true;
-          wallDir = -1;
-          break outer;
-        }
+    const col = Math.floor(nx / TILE);
+    for (let r = rowStart; r <= rowEnd; r++) {
+      if (isBlocking(grid, col, r)) {
+        nx = (col + 1) * TILE;
+        hit = true;
+        wallDir = -1;
+        break;
       }
     }
   }
@@ -72,33 +68,27 @@ export function resolveY(grid, x, y, w, h, dy, TILE, dropThrough, prevBottom) {
   let hit = false;
   let grounded = false;
   if (dy > 0) {
-    const rowStart2 = Math.floor((y + h) / TILE);
-    const rowEnd2 = Math.floor((ny + h - 0.001) / TILE);
-    outer: for (let row = rowStart2; row <= rowEnd2; row++) {
-      const tileTop = row * TILE;
-      for (let c = colStart; c <= colEnd; c++) {
-        const cell = cellAt(grid, c, row);
-        const solid = cell === SOLID || cell === DESTRUCT;
-        // one-way: only when descending, not dropping, and we were above the top
-        const oneWay = cell === ONEWAY && !dropThrough && prevBottom <= tileTop + 0.001;
-        if (solid || oneWay) {
-          ny = tileTop - h;
-          hit = true;
-          grounded = true;
-          break outer;
-        }
+    const row = Math.floor((ny + h - 0.001) / TILE);
+    const tileTop = row * TILE;
+    for (let c = colStart; c <= colEnd; c++) {
+      const cell = cellAt(grid, c, row);
+      const solid = cell === SOLID || cell === DESTRUCT;
+      // one-way: only when descending, not dropping, and we were above the top
+      const oneWay = cell === ONEWAY && !dropThrough && prevBottom <= tileTop + 0.001;
+      if (solid || oneWay) {
+        ny = tileTop - h;
+        hit = true;
+        grounded = true;
+        break;
       }
     }
   } else if (dy < 0) {
-    const rowStart2 = Math.floor(y / TILE);
-    const rowEnd2 = Math.floor(ny / TILE);
-    outer: for (let row = rowStart2; row >= rowEnd2; row--) {
-      for (let c = colStart; c <= colEnd; c++) {
-        if (isBlocking(grid, c, row)) {
-          ny = (row + 1) * TILE;
-          hit = true;
-          break outer;
-        }
+    const row = Math.floor(ny / TILE);
+    for (let c = colStart; c <= colEnd; c++) {
+      if (isBlocking(grid, c, row)) {
+        ny = (row + 1) * TILE;
+        hit = true;
+        break;
       }
     }
   }
