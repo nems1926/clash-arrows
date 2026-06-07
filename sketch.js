@@ -4,7 +4,6 @@ import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, computeIntent } from './input.js';
 import { drawWorld, drawArrows } from './render.js';
 import { createDebug, drawDebug } from './debug.js';
-import { aimVector } from './aim.js';
 import { createPool, acquire, spawnArrow, updateArrow } from './arrow.js';
 import { canShoot, spendArrow } from './quiver.js';
 
