@@ -8,6 +8,11 @@ const PARAMS = [
   ['vSlide', 0, 300], ['wallJumpX', 0, 400], ['wallJumpY', -400, 0],
   ['coyoteFrames', 0, 20], ['bufferFrames', 0, 20],
   ['apexGravityMult', 0, 1], ['apexVyThreshold', 0, 200], ['jumpCutMult', 0, 1],
+  // --- Combat (J1) tuning params ---
+  ['arrowSpeed', 0, 500], ['arrowGravity', 0, 600], ['quiverStart', 0, 10],
+  ['dodgeSpeed', 0, 400], ['dodgeDuration', 0, 40], ['dodgeInvulnFrames', 0, 40],
+  ['dodgeCooldown', 0, 60], ['selfArmFrames', 0, 60], ['stompBounceVy', -300, 0],
+  ['roundsToWin', 1, 15],
 ];
 
 export function createDebug(cfg) {
@@ -26,7 +31,8 @@ export function createDebug(cfg) {
     const slider = document.createElement('input');
     slider.type = 'range';
     slider.min = min; slider.max = max;
-    slider.step = key.endsWith('Frames') ? 1 : (max - min) / 200; // frame counts are integers
+    const isInt = key.endsWith('Frames') || ['quiverStart', 'dodgeDuration', 'dodgeCooldown', 'roundsToWin'].includes(key);
+    slider.step = isInt ? 1 : (max - min) / 200;
     slider.value = cfg[key];
     const val = document.createElement('span');
     val.textContent = cfg[key];
@@ -86,6 +92,8 @@ export function drawDebug(dbg, player) {
     `v: (${player.vx.toFixed(0)}, ${player.vy.toFixed(0)})`,
     `sol:${player.grounded ? '✔' : '✘'} mur:${player.wallDir}`,
     `coyote:${Math.max(0, player.coyote)} buf:${Math.max(0, player.buffer)}`,
+    `carquois:${player.quiver} invuln:${Math.max(0, player.invulnTime)}`,
+    `dodgeCd:${Math.max(0, player.dodgeCooldownTimer)}`,
   ];
   lines.forEach((l, i) => text(l, 6, 6 + i * 16));
   pop();
