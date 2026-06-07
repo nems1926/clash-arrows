@@ -18,7 +18,7 @@ export const DEFAULT_CONFIG = {
   vFallMax: 240,       // px/s   fall speed cap
   vSlide: 60,          // px/s   wall-slide fall cap
   wallJumpX: 120,      // px/s   horizontal wall-jump impulse
-  wallJumpY: -150,     // px/s   vertical wall-jump impulse
+  wallJumpY: -180,     // px/s   vertical wall-jump impulse
   coyoteFrames: 6,
   bufferFrames: 6,
   apexGravityMult: 0.5,
@@ -26,8 +26,8 @@ export const DEFAULT_CONFIG = {
   jumpCutMult: 0.5,    // ascent cut on jump release
   // --- Combat (J1), valeurs de départ PRD §5, calibrables au panneau debug ---
   arrowSpeed: 190,        // px/s   vitesse initiale de la flèche
-  arrowGravity: 100,      // px/s²  arc balistique (< gravité joueur)
-  arrowStraightDist: Math.round(W / 3), // px  vol tendu (sans gravité) avant que la gravité s'applique (~1/3 d'écran)
+  arrowGravity: 450,      // px/s²  arc balistique (< gravité joueur)
+  arrowStraightDist: 50, // px  vol tendu (sans gravité) avant que la gravité s'applique (~1/3 d'écran)
   quiverStart: 3,         // flèches de départ
   dodgeSpeed: 180,        // px/s   vitesse du dash d'esquive
   dodgeDuration: 3,      // frames durée totale du dash
