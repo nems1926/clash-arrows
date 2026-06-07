@@ -29,6 +29,7 @@ export const DEFAULT_CONFIG = {
   arrowGravity: 450,      // px/s²  arc balistique (< gravité joueur)
   arrowStraightDist: 50, // px  vol tendu (sans gravité) avant que la gravité s'applique (~1/3 d'écran)
   quiverStart: 3,         // flèches de départ
+  quiverCapacity: 6,      // max flèches au ramassage
   dodgeSpeed: 180,        // px/s   vitesse du dash d'esquive
   dodgeDuration: 3,      // frames durée totale du dash
   dodgeInvulnFrames: 3,   // frames fenêtre invuln + attrape (sous-ensemble)

@@ -6,7 +6,7 @@ import { drawWorld, drawArrows } from './render.js';
 import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow, release } from './arrow.js';
-import { canShoot, spendArrow, addArrow } from './quiver.js';
+import { canShoot, shootType, addArrow } from './quiver.js';
 import { toroidalOverlap, canCatch, arrowLethal, isStomp } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
 import { createGame, advance } from './game.js';
@@ -60,7 +60,8 @@ if (!navigator.gpu) {
       p.vx = 0; p.vy = 0;
       p.state = 'AIRBORNE';
       p.grounded = false;
-      p.quiver = cfg.quiverStart;
+      p.quiver = Array(cfg.quiverStart).fill('normal');
+      p.shield = false;
       p.dodgeTime = 0; p.invulnTime = 0; p.dodgeCooldownTimer = 0;
       p.prevBottom = y + p.h;
     }
@@ -102,8 +103,8 @@ if (!navigator.gpu) {
       if (intent.shootPressed && canShoot(p)) {
         const a = acquire(arrowPool);
         if (a) {
-          spendArrow(p);
-          spawnArrow(a, p.x + p.w / 2, p.y + p.h / 2, p.aimDir.x, p.aimDir.y, p.index, cfg);
+          const t = shootType(p);
+          spawnArrow(a, p.x + p.w / 2, p.y + p.h / 2, p.aimDir.x, p.aimDir.y, p.index, cfg, t);
         }
       }
       p.prevKeys = keys;
@@ -119,8 +120,8 @@ if (!navigator.gpu) {
         const pbox = { x: p.x, y: p.y, w: p.w, h: p.h };
         const abox = { x: a.x, y: a.y, w: a.w, h: a.h };
         if (!toroidalOverlap(pbox, abox, cfg.W, cfg.H)) continue;
-        if (a.state === 'STUCK') { addArrow(p); a.active = false; }
-        else if (canCatch(p)) { addArrow(p); a.active = false; }
+        if (a.state === 'STUCK') { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
+        else if (canCatch(p)) { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (arrowLethal(a, p.index, cfg)) { p.state = 'DEAD'; p.vx = 0; p.vy = 0; a.active = false; }
       }
     }

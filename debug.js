@@ -93,7 +93,7 @@ export function drawDebug(dbg, player) {
     `v: (${player.vx.toFixed(0)}, ${player.vy.toFixed(0)})`,
     `sol:${player.grounded ? '✔' : '✘'} mur:${player.wallDir}`,
     `coyote:${Math.max(0, player.coyote)} buf:${Math.max(0, player.buffer)}`,
-    `carquois:${player.quiver} invuln:${Math.max(0, player.invulnTime)}`,
+    `carquois:${player.quiver.length} invuln:${Math.max(0, player.invulnTime)}`,
     `dodgeCd:${Math.max(0, player.dodgeCooldownTimer)}`,
   ];
   lines.forEach((l, i) => text(l, 6, 6 + i * 16));
