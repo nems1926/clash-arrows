@@ -13,7 +13,7 @@ export const DEFAULT_CONFIG = {
   vMax: 90,            // px/s   run target speed
   accel: 540,          // px/s²  ~10 frames to reach vMax
   decel: 540,          // px/s²  ground deceleration on release
-  vJump: -150,         // px/s   jump impulse (negative = up)
+  vJump: -160,         // px/s   jump impulse (negative = up)
   gravity: 600,        // px/s²
   vFallMax: 240,       // px/s   fall speed cap
   vSlide: 60,          // px/s   wall-slide fall cap
