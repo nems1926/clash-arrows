@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseArena, ARENA_A } from '../arena.js';
+import { parseArena, ARENA_A, ARENAS, pickRandomArena } from '../arena.js';
 import { SOLID, ONEWAY, EMPTY, DESTRUCT } from '../tilemap.js';
 
 describe('parseArena', () => {
@@ -33,5 +33,24 @@ describe('ARENA_A', () => {
   });
   it('has at least one spawn', () => {
     expect(parseArena(ARENA_A).spawns.length).toBeGreaterThan(0);
+  });
+});
+
+describe('arena set', () => {
+  it('exposes 3 arenas', () => {
+    expect(ARENAS).toHaveLength(3);
+  });
+  it('every arena is 32x18, has >=4 player spawns and >=1 pickup spawn', () => {
+    for (const ascii of ARENAS) {
+      expect(ascii).toHaveLength(18);
+      for (const row of ascii) expect(row).toHaveLength(32);
+      const { spawns, pickupSpawns } = parseArena(ascii);
+      expect(spawns.length).toBeGreaterThanOrEqual(4);
+      expect(pickupSpawns.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+  it('pickRandomArena returns one of the arenas via injected rand', () => {
+    expect(pickRandomArena(() => 0)).toBe(ARENAS[0]);
+    expect(pickRandomArena(() => 0.99)).toBe(ARENAS[2]);
   });
 });
