@@ -9,7 +9,8 @@ const PARAMS = [
   ['coyoteFrames', 0, 20], ['bufferFrames', 0, 20],
   ['apexGravityMult', 0, 1], ['apexVyThreshold', 0, 200], ['jumpCutMult', 0, 1],
   // --- Combat (J1) tuning params ---
-  ['arrowSpeed', 0, 500], ['arrowGravity', 0, 600], ['quiverStart', 0, 10],
+  ['arrowSpeed', 0, 500], ['arrowGravity', 0, 600], ['arrowStraightDist', 0, 320],
+  ['quiverStart', 0, 10],
   ['dodgeSpeed', 0, 400], ['dodgeDuration', 0, 40], ['dodgeInvulnFrames', 0, 40],
   ['dodgeCooldown', 0, 60], ['selfArmFrames', 0, 60], ['stompBounceVy', -300, 0],
   ['roundsToWin', 1, 15],

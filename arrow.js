@@ -6,6 +6,7 @@ export function createArrow() {
     x: 0, y: 0, vx: 0, vy: 0,
     dirX: 1, dirY: 0,        // launch direction, kept for stuck orientation
     owner: -1, ageFrames: 0,
+    traveled: 0,             // path distance flown so far (gates gravity onset)
     w: 6, h: 2,
   };
 }
@@ -20,13 +21,19 @@ export function spawnArrow(a, x, y, dx, dy, owner, cfg) {
   a.vy = dy * cfg.arrowSpeed;
   a.owner = owner;
   a.ageFrames = 0;
+  a.traveled = 0;
   return a;
 }
 
 export function updateArrow(a, cfg, grid, dt) {
   if (!a.active || a.state !== 'IN_FLIGHT') return a;
   a.ageFrames++;
-  a.vy += cfg.arrowGravity * dt;
+  // Straight flight first: gravity only kicks in after the arrow has flown
+  // ~a third of the screen (cfg.arrowStraightDist), giving a flat shot that
+  // then arcs down.
+  if (a.traveled >= cfg.arrowStraightDist) {
+    a.vy += cfg.arrowGravity * dt;
+  }
   // Sub-step the move (~1px increments) so a fast arrow plants flush against the
   // surface it hits instead of overshooting and burying its AABB inside the tile
   // (which left it unpickable). On contact, rest at the last clear position.
@@ -35,6 +42,7 @@ export function updateArrow(a, cfg, grid, dt) {
   const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy)));
   const sx = dx / steps;
   const sy = dy / steps;
+  const stepDist = Math.hypot(sx, sy);
   for (let i = 0; i < steps; i++) {
     const nx = wrap(a.x + sx, cfg.W);
     const ny = wrap(a.y + sy, cfg.H);
@@ -45,6 +53,7 @@ export function updateArrow(a, cfg, grid, dt) {
     }
     a.x = nx;
     a.y = ny;
+    a.traveled += stepDist;
   }
   return a;
 }

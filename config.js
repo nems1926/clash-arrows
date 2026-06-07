@@ -27,6 +27,7 @@ export const DEFAULT_CONFIG = {
   // --- Combat (J1), valeurs de départ PRD §5, calibrables au panneau debug ---
   arrowSpeed: 190,        // px/s   vitesse initiale de la flèche
   arrowGravity: 100,      // px/s²  arc balistique (< gravité joueur)
+  arrowStraightDist: Math.round(W / 3), // px  vol tendu (sans gravité) avant que la gravité s'applique (~1/3 d'écran)
   quiverStart: 3,         // flèches de départ
   dodgeSpeed: 180,        // px/s   vitesse du dash d'esquive
   dodgeDuration: 3,      // frames durée totale du dash

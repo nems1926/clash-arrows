@@ -18,13 +18,27 @@ describe('arrow ballistics', () => {
     expect(a.owner).toBe(0);
   });
 
-  it('falls under arrow gravity and advances', () => {
+  it('flies straight (no gravity) for the first ~third of the screen', () => {
+    const c = cfg();
     const a = createArrow();
-    spawnArrow(a, 100, 50, 1, 0, 0, cfg());
-    updateArrow(a, cfg(), emptyGrid, DT);
-    expect(a.x).toBeGreaterThan(100);
-    expect(a.vy).toBeGreaterThan(0);
+    spawnArrow(a, 0, 50, 1, 0, 0, c); // fired right from the left edge
+    updateArrow(a, c, emptyGrid, DT);
+    expect(a.x).toBeGreaterThan(0);   // advances
+    expect(a.vy).toBe(0);             // straight phase: no gravity yet
     expect(a.ageFrames).toBe(1);
+  });
+
+  it('starts falling once it has travelled past arrowStraightDist', () => {
+    const c = cfg();
+    const a = createArrow();
+    spawnArrow(a, 0, 50, 1, 0, 0, c);
+    // fly until just past the straight distance
+    for (let i = 0; i < 500 && a.traveled < c.arrowStraightDist; i++) {
+      updateArrow(a, c, emptyGrid, DT);
+    }
+    expect(a.vy).toBe(0);             // still straight right at the threshold
+    updateArrow(a, c, emptyGrid, DT); // one more step → gravity engages
+    expect(a.vy).toBeGreaterThan(0);
   });
 
   it('plants (STUCK) when it reaches a solid tile', () => {
