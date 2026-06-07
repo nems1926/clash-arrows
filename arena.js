@@ -1,4 +1,4 @@
-import { SOLID, ONEWAY, EMPTY } from './tilemap.js';
+import { SOLID, ONEWAY, EMPTY, DESTRUCT } from './tilemap.js';
 
 // 32 columns × 18 rows. Row 0 = top.
 export const ARENA_A = [
@@ -31,6 +31,7 @@ export function parseArena(ascii) {
       const ch = ascii[r][c];
       if (ch === '#') row.push(SOLID);
       else if (ch === '=') row.push(ONEWAY);
+      else if (ch === '%') row.push(DESTRUCT);
       else {
         row.push(EMPTY);
         if (ch === 'S') spawns.push({ col: c, row: r });

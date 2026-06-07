@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseArena, ARENA_A } from '../arena.js';
-import { SOLID, ONEWAY, EMPTY } from '../tilemap.js';
+import { SOLID, ONEWAY, EMPTY, DESTRUCT } from '../tilemap.js';
 
 describe('parseArena', () => {
   it('maps characters to cell codes and collects spawns', () => {
@@ -8,6 +8,13 @@ describe('parseArena', () => {
     expect(grid[0]).toEqual([SOLID, ONEWAY, EMPTY]);
     expect(grid[1]).toEqual([EMPTY, EMPTY, EMPTY]); // S is walkable space
     expect(spawns).toEqual([{ col: 2, row: 1 }]);
+  });
+});
+
+describe('parseArena destructibles', () => {
+  it('maps % to DESTRUCT', () => {
+    const { grid } = parseArena(['..%..']);
+    expect(grid[0][2]).toBe(DESTRUCT);
   });
 });
 

@@ -1,10 +1,11 @@
-import { SOLID, ONEWAY } from './tilemap.js';
+import { SOLID, ONEWAY, DESTRUCT } from './tilemap.js';
 import { W, H, SCALE, TILE } from './config.js';
 
 const COL = {
   bg: '#0d1b2a',
   solid: '#6b7280',
   oneway: '#38bdf8',
+  destruct: '#a16207',
   arrow: '#fcd34d',
   aim: '#f87171',
 };
@@ -28,6 +29,9 @@ export function drawWorld(grid, players) {
       } else if (cell === ONEWAY) {
         fill(COL.oneway);
         rect(c * TILE, r * TILE + 1, TILE, 3); // thin top lip
+      } else if (cell === DESTRUCT) {
+        fill(COL.destruct);
+        rect(c * TILE, r * TILE, TILE, TILE);
       }
     }
   }
