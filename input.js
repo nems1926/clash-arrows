@@ -1,5 +1,19 @@
 // q5play exposes `kb` as a global. Adjust key names here if the runtime
 // check in Task 11 shows different identifiers.
+
+// Temporary P2 keyboard zone for Phase B testing (replaced in Phase C).
+export function readKeys2() {
+  return {
+    left: kb.pressing('left'),
+    right: kb.pressing('right'),
+    up: kb.pressing('up'),
+    down: kb.pressing('down'),
+    jump: kb.pressing('up'),       // up doubles as jump for the test zone
+    shoot: kb.pressing('enter'),
+    dodge: kb.pressing('/'),
+  };
+}
+
 export function readKeys() {
   return {
     left: kb.pressing('left') || kb.pressing('a') || kb.pressing('q'),

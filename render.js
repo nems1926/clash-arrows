@@ -10,7 +10,7 @@ const COL = {
   aim: '#f87171',
 };
 
-export function drawWorld(grid, player) {
+export function drawWorld(grid, players) {
   background(COL.bg);
   push();
   translate(-W * SCALE / 2, -H * SCALE / 2); // logical (0,0) at top-left
@@ -31,21 +31,22 @@ export function drawWorld(grid, player) {
     }
   }
 
-  // player + ghosts (draw at -W/0/+W and -H/0/+H offsets)
-  fill(COL.player);
-  for (const dx of [-W, 0, W]) {
-    for (const dy of [-H, 0, H]) {
-      rect(player.x + dx, player.y + dy, player.w, player.h);
+  // players + ghosts (skip the dead)
+  for (const player of players) {
+    if (player.state === 'DEAD') continue;
+    fill(COL.player);
+    for (const dx of [-W, 0, W]) {
+      for (const dy of [-H, 0, H]) {
+        rect(player.x + dx, player.y + dy, player.w, player.h);
+      }
     }
-  }
-
-  // aim indicator: a short line from the player center along aimDir
-  if (player.aimDir) {
-    stroke(COL.aim); strokeWeight(1);
-    const cx = player.x + player.w / 2;
-    const cy = player.y + player.h / 2;
-    line(cx, cy, cx + player.aimDir.x * 8, cy + player.aimDir.y * 8);
-    noStroke();
+    if (player.aimDir) {
+      stroke(COL.aim); strokeWeight(1);
+      const cx = player.x + player.w / 2;
+      const cy = player.y + player.h / 2;
+      line(cx, cy, cx + player.aimDir.x * 8, cy + player.aimDir.y * 8);
+      noStroke();
+    }
   }
 
   pop();
