@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createArrow, spawnArrow, updateArrow, createPool, acquire, release } from '../arrow.js';
+import { createArrow, spawnArrow, updateArrow, createPool, acquire, release, ARROW_TYPES } from '../arrow.js';
 import { arrowBoxHitsTile } from '../tilemap.js';
 import { DEFAULT_CONFIG } from '../config.js';
 
@@ -93,5 +93,25 @@ describe('arrow pool', () => {
     release(pool, a);
     expect(acquire(pool)).toBe(a);    // recycled
     expect(b.active).toBe(true);
+  });
+});
+
+describe('bomb arrow impact', () => {
+  it('exposes a color per type', () => {
+    expect(ARROW_TYPES.normal.color).toBeTruthy();
+    expect(ARROW_TYPES.bomb.color).toBeTruthy();
+  });
+  it('a bomb arrow goes to EXPLODE on terrain impact (normal goes STUCK)', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    grid[5][12] = 1; // solid
+    const bomb = createArrow();
+    spawnArrow(bomb, 110, 55, 1, 0, 0, c, 'bomb');
+    for (let i = 0; i < 10 && bomb.state === 'IN_FLIGHT'; i++) updateArrow(bomb, c, grid, DT);
+    expect(bomb.state).toBe('EXPLODE');
+    const normal = createArrow();
+    spawnArrow(normal, 110, 55, 1, 0, 0, c, 'normal');
+    for (let i = 0; i < 10 && normal.state === 'IN_FLIGHT'; i++) updateArrow(normal, c, grid, DT);
+    expect(normal.state).toBe('STUCK');
   });
 });

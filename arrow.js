@@ -1,5 +1,12 @@
 import { arrowBoxHitsTile, wrap } from './tilemap.js';
 
+// Pluggable arrow types. `color` drives rendering; `explosive` decides the
+// terrain-impact state. New types (laser, bolt…) slot in here later.
+export const ARROW_TYPES = {
+  normal: { color: '#fcd34d', explosive: false },
+  bomb: { color: '#fb7185', explosive: true },
+};
+
 export function createArrow() {
   return {
     active: false, state: 'STUCK',
@@ -49,7 +56,7 @@ export function updateArrow(a, cfg, grid, dt) {
     const nx = wrap(a.x + sx, cfg.W);
     const ny = wrap(a.y + sy, cfg.H);
     if (arrowBoxHitsTile(grid, nx, ny, a.w, a.h, cfg.TILE)) {
-      a.state = 'STUCK';
+      a.state = ARROW_TYPES[a.type]?.explosive ? 'EXPLODE' : 'STUCK';
       a.vx = 0; a.vy = 0;
       return a; // rest at the last clear position (a.x, a.y)
     }
