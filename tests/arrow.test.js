@@ -73,6 +73,15 @@ describe('arrow ballistics', () => {
     expect(a.y + a.h).toBeLessThanOrEqual(100.001);
     expect(a.y + a.h).toBeGreaterThan(98);
   });
+
+  it('carries the arrow type from spawn (default normal)', () => {
+    const c = cfg();
+    const a = createArrow();
+    spawnArrow(a, 100, 50, 1, 0, 0, c);            // no type → normal
+    expect(a.type).toBe('normal');
+    spawnArrow(a, 100, 50, 1, 0, 0, c, 'bomb');    // explicit type
+    expect(a.type).toBe('bomb');
+  });
 });
 
 describe('arrow pool', () => {
