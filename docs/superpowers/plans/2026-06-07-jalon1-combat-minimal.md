@@ -1116,7 +1116,11 @@ git commit -m "feat(j1): stomp predicate (from-above + descending)"
 
 ---
 
-### Task B4 : Sprites proxy q5play + groupes + ghosts capteurs (wiring)
+### Task B4 : Sprites proxy q5play + groupes + ghosts capteurs (wiring) — **SAUTÉE (décision 2026-06-07)**
+
+> **Décision d'exécution :** la résolution de combat (B5/B6) utilise les **prédicats purs toroïdaux** (`toroidalOverlap`, `canCatch`, `arrowLethal`, `isStomp`), déjà testés et corrects sur la couture du wrap. Le scaffold Sprites/Groups q5play serait du code mort (B5/B6 ne s'en servent pas) et sa seule valeur — vérifier `overlaps()` à travers la couture — n'est pas testable en headless. Cette tâche est donc **sautée** ; `coords.js` (créé en A8 pour le pont Sprite) devient inutilisé et sera retiré au nettoyage final si aucun besoin n'apparaît. Les Sprites q5play pourront être réintroduits plus tard pour un vrai besoin (rendu spritesheet, débris physiques).
+
+Contenu original conservé pour mémoire :
 
 **Files:**
 - Create: `arrowsprites.js`
