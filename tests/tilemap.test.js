@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wrap, cellAt, isSolidAt } from '../tilemap.js';
+import { wrap, cellAt, isSolidAt, arrowHitsTile, SOLID, ONEWAY } from '../tilemap.js';
 
 const grid = [
   [0, 1, 0],
@@ -124,5 +124,25 @@ describe('wallContact', () => {
   });
   it('returns 0 in open space', () => {
     expect(wallContact(floorGrid, 12, 0, 8, 8, TILE)).toBe(0);
+  });
+});
+
+describe('arrowHitsTile', () => {
+  const grid = [
+    [0, 0, 0],
+    [0, 1, 2], // (col1=solid, col2=oneway)
+    [0, 0, 0],
+  ];
+  it('detects a solid tile at the point', () => {
+    expect(arrowHitsTile(grid, 15, 15, 10)).toBe(true); // col1,row1
+  });
+  it('detects a one-way tile at the point (arrows stick to anything)', () => {
+    expect(arrowHitsTile(grid, 25, 15, 10)).toBe(true); // col2,row1
+  });
+  it('returns false in empty space', () => {
+    expect(arrowHitsTile(grid, 5, 5, 10)).toBe(false);
+  });
+  it('reads through the toroidal seam (modulo lookup)', () => {
+    expect(arrowHitsTile(grid, 15 + 30, 15, 10)).toBe(true); // wraps to col1
   });
 });

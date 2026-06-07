@@ -101,3 +101,10 @@ export function wallContact(grid, x, y, w, h, TILE) {
   if (left) return -1;
   return 0;
 }
+
+// Arrows stick to any non-empty tile (solid OR one-way). Point-in-grid test,
+// modulo lookup so it reads correctly across the toroidal seam.
+export function arrowHitsTile(grid, x, y, TILE) {
+  const cell = cellAt(grid, Math.floor(x / TILE), Math.floor(y / TILE));
+  return cell === SOLID || cell === ONEWAY;
+}
