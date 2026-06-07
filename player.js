@@ -21,6 +21,7 @@ export function createPlayer(x, y, cfg) {
     aimDir: { x: 1, y: 0 },
     index: 0,
     roundsWon: 0,
+    dodgeTime: 0, invulnTime: 0, dodgeCooldownTimer: 0,
   };
 }
 
@@ -29,7 +30,22 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
   p.coyote = p.grounded ? cfg.coyoteFrames : Math.max(0, p.coyote - 1);
   p.buffer = intent.jumpPressed ? cfg.bufferFrames : Math.max(0, p.buffer - 1);
 
+  // 1b. dodge timers + start (directional dash with invuln window)
+  p.dodgeTime = Math.max(0, p.dodgeTime - 1);
+  p.invulnTime = Math.max(0, p.invulnTime - 1);
+  p.dodgeCooldownTimer = Math.max(0, p.dodgeCooldownTimer - 1);
+  if (intent.dodgePressed && p.dodgeCooldownTimer === 0 && p.dodgeTime === 0) {
+    p.dodgeTime = cfg.dodgeDuration;
+    p.invulnTime = cfg.dodgeInvulnFrames;
+    p.dodgeCooldownTimer = cfg.dodgeCooldown;
+    const dir = aimVector({ moveX: intent.moveX, up: intent.up, down: intent.down }, p.facing);
+    p.vx = dir.x * cfg.dodgeSpeed;
+    p.vy = dir.y * cfg.dodgeSpeed;
+  }
+  const dodging = p.dodgeTime > 0;
+
   // 2. horizontal accel / decel
+  if (!dodging) {
   if (intent.moveX !== 0) {
     p.vx = clamp(p.vx + intent.moveX * cfg.accel * dt, -cfg.vMax, cfg.vMax);
     p.facing = intent.moveX;
@@ -37,12 +53,13 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
     const drop = cfg.decel * dt;
     p.vx = Math.abs(p.vx) <= drop ? 0 : p.vx - sign(p.vx) * drop;
   }
+  }
 
   // 3. wall contact (pre-move probe)
   const wc = wallContact(grid, p.x, p.y, p.w, p.h, cfg.TILE);
 
   // 4. jump (ground / coyote) or wall-jump
-  if (p.buffer > 0) {
+  if (!dodging && p.buffer > 0) {
     if (p.grounded || p.coyote > 0) {
       p.vy = cfg.vJump;
       p.buffer = 0;
@@ -56,17 +73,19 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
   }
 
   // 5. variable jump height: cut ascent on release
-  if (p.jumpHeldPrev && !intent.jumpHeld && p.vy < 0) {
+  if (!dodging && p.jumpHeldPrev && !intent.jumpHeld && p.vy < 0) {
     p.vy *= cfg.jumpCutMult;
   }
 
   // 6. gravity with apex hang
-  let g = cfg.gravity;
-  if (Math.abs(p.vy) < cfg.apexVyThreshold) g *= cfg.apexGravityMult;
-  p.vy = Math.min(p.vy + g * dt, cfg.vFallMax);
+  if (!dodging) {
+    let g = cfg.gravity;
+    if (Math.abs(p.vy) < cfg.apexVyThreshold) g *= cfg.apexGravityMult;
+    p.vy = Math.min(p.vy + g * dt, cfg.vFallMax);
+  }
 
   // 7. wall slide: cap fall when pushing into a wall while airborne
-  if (!p.grounded && wc !== 0 && intent.moveX === wc && p.vy > 0) {
+  if (!dodging && !p.grounded && wc !== 0 && intent.moveX === wc && p.vy > 0) {
     p.vy = Math.min(p.vy, cfg.vSlide);
   }
 
@@ -85,7 +104,9 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
   p.y = wrap(p.y, cfg.H);
 
   // 10. FSM state + remembered inputs
-  if (p.grounded) p.state = 'GROUNDED';
+  if (p.state === 'DEAD') { /* stays dead */ }
+  else if (p.dodgeTime > 0) p.state = 'DODGING';
+  else if (p.grounded) p.state = 'GROUNDED';
   else if (!p.grounded && wc !== 0 && intent.moveX === wc && p.vy > 0) p.state = 'WALLSLIDE';
   else p.state = 'AIRBORNE';
   p.wallDir = wc;

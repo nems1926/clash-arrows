@@ -58,6 +58,7 @@ describe('player core', () => {
 
 const press = (over = {}) => ({ moveX: 0, jumpHeld: true, jumpPressed: true, down: false, ...over });
 const idle = (over = {}) => ({ moveX: 0, jumpHeld: false, jumpPressed: false, down: false, ...over });
+const full = (over = {}) => ({ moveX: 0, up: false, down: false, jumpHeld: false, jumpPressed: false, shootPressed: false, dodgePressed: false, ...over });
 
 // a left wall in column 0, no floor reachable quickly
 const wallGridP = [
@@ -129,6 +130,33 @@ describe('player jump & states', () => {
     const p = createPlayer(10, 0, cfg());
     for (let i = 0; i < 120; i++) updatePlayer(p, idle(), cfg(), grid, DT);
     expect(p.state).toBe('GROUNDED');
+  });
+});
+
+describe('dodge', () => {
+  it('enters DODGING with invuln on dodgePressed', () => {
+    const c = cfg();
+    const p = createPlayer(15, 5, c);
+    updatePlayer(p, full({ dodgePressed: true, moveX: 1 }), c, grid, DT);
+    expect(p.state).toBe('DODGING');
+    expect(p.invulnTime).toBeGreaterThan(0);
+    expect(p.dodgeTime).toBeGreaterThan(0);
+  });
+  it('does not re-dodge during cooldown', () => {
+    const c = cfg();
+    const p = createPlayer(15, 5, c);
+    updatePlayer(p, full({ dodgePressed: true }), c, grid, DT);
+    for (let i = 0; i < c.dodgeDuration + 1; i++) updatePlayer(p, full(), c, grid, DT);
+    p.dodgeCooldownTimer = c.dodgeCooldown; // still cooling
+    updatePlayer(p, full({ dodgePressed: true }), c, grid, DT);
+    expect(p.state).not.toBe('DODGING');
+  });
+  it('dash keeps its speed (not clamped by normal accel)', () => {
+    const c = cfg();
+    const p = createPlayer(15, 5, c);
+    updatePlayer(p, full({ dodgePressed: true, moveX: 1 }), c, grid, DT);
+    // dash speed (180) exceeds vMax (90); during the dodge vx must stay > vMax
+    expect(Math.abs(p.vx)).toBeGreaterThan(c.vMax);
   });
 });
 
