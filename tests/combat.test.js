@@ -54,4 +54,10 @@ describe('stomp', () => {
     const stomper = { x: 51, y: 50, w: 8, h: 12, vy: 80, prevBottom: 62 };
     expect(isStomp(stomper, victim)).toBe(false);
   });
+  it('is NOT a stomp when the stomper is far above (no real contact yet)', () => {
+    // descending + horizontally overlapping + was above the head last frame,
+    // but its body is nowhere near the victim this frame: must not stomp.
+    const stomper = { x: 51, y: 10, w: 8, h: 12, vy: 80, prevBottom: 21 };
+    expect(isStomp(stomper, victim)).toBe(false);
+  });
 });

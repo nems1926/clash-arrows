@@ -32,11 +32,16 @@ export function arrowLethal(arrow, target, cfg) {
   return true; // opponents' arrows always kill (free-for-all)
 }
 
-// stomper kills victim if descending and its previous bottom was at/above the
-// victim's head, with horizontal overlap (vertical-from-above contact).
+// stomper kills victim on a vertical-from-above contact: descending, horizontally
+// overlapping, its bottom was above the victim's head last frame (wasAboveHead)
+// AND has actually reached the head this frame (reachedHead). The reachedHead
+// check is what prevents a far-above descending player from triggering a stomp.
 export function isStomp(stomper, victim) {
   if (stomper.vy <= 0) return false;
   const hOverlap = stomper.x < victim.x + victim.w && stomper.x + stomper.w > victim.x;
   if (!hOverlap) return false;
-  return stomper.prevBottom <= victim.y + 1;
+  const sBottom = stomper.y + stomper.h;
+  const wasAboveHead = stomper.prevBottom <= victim.y + 1;
+  const reachedHead = sBottom >= victim.y;
+  return wasAboveHead && reachedHead;
 }
