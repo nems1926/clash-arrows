@@ -163,7 +163,9 @@ describe('dodge', () => {
 describe('player aim & quiver', () => {
   it('starts with a full quiver and faces right', () => {
     const p = createPlayer(10, 0, cfg());
-    expect(p.quiver).toBe(DEFAULT_CONFIG.quiverStart);
+    expect(p.quiver).toHaveLength(DEFAULT_CONFIG.quiverStart);
+    expect(p.quiver.every((t) => t === 'normal')).toBe(true);
+    expect(p.shield).toBe(false);
     expect(p.facing).toBe(1);
   });
   it('updates aimDir from the held direction', () => {
