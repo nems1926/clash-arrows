@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aabbOverlap, toroidalOverlap, canCatch, isArmed, arrowLethal, isStomp } from '../combat.js';
+import { aabbOverlap, toroidalOverlap, canCatch, isArmed, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius } from '../combat.js';
 import { DEFAULT_CONFIG } from '../config.js';
 
 const cfg = () => ({ ...DEFAULT_CONFIG });
@@ -59,5 +59,41 @@ describe('stomp', () => {
     // but its body is nowhere near the victim this frame: must not stomp.
     const stomper = { x: 51, y: 10, w: 8, h: 12, vy: 80, prevBottom: 21 };
     expect(isStomp(stomper, victim)).toBe(false);
+  });
+});
+
+describe('explosion & shield helpers', () => {
+  it('isInvulnerable during the dodge window', () => {
+    expect(isInvulnerable({ invulnTime: 2 })).toBe(true);
+    expect(isInvulnerable({ invulnTime: 0 })).toBe(false);
+  });
+  it('killOrShield consumes a shield, then kills', () => {
+    const p = { state: 'AIRBORNE', shield: true, vx: 5, vy: 5 };
+    expect(killOrShield(p)).toBe(false);   // absorbed
+    expect(p.shield).toBe(false);
+    expect(p.state).toBe('AIRBORNE');
+    expect(killOrShield(p)).toBe(true);    // now lethal
+    expect(p.state).toBe('DEAD');
+  });
+  it('playersInRadius returns players within the (toroidal) radius', () => {
+    const a = { x: 48, y: 48, w: 8, h: 12 };  // center ~ (52,54)
+    const far = { x: 200, y: 100, w: 8, h: 12 };
+    const got = playersInRadius([a, far], 52, 54, 20, 320, 180);
+    expect(got).toContain(a);
+    expect(got).not.toContain(far);
+  });
+  it('playersInRadius sees across the seam', () => {
+    const edge = { x: 314, y: 50, w: 8, h: 12 }; // center ~318
+    const got = playersInRadius([edge], 2, 56, 20, 320, 180); // x=2 ~4px from 318 across seam
+    expect(got).toContain(edge);
+  });
+  it('destructibleCellsInRadius returns only DESTRUCT cells in range', () => {
+    const grid = [
+      [0, 0, 0],
+      [0, 3, 1], // (1,1)=destruct, (2,1)=solid
+      [0, 0, 0],
+    ];
+    const cells = destructibleCellsInRadius(grid, 15, 15, 8, 10, 30, 30); // near col1,row1 center (15,15)
+    expect(cells).toEqual([{ r: 1, c: 1 }]);
   });
 });
