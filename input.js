@@ -52,7 +52,7 @@ export function computeIntent(keys, prev) {
     up: !!keys.up,
     down: !!keys.down,
     jumpHeld: !!keys.jump,
-    jumpPressed: keys.jump && !prev.jump && !prev.jumpHeld,
+    jumpPressed: keys.jump && !prev.jump,
     shootPressed: keys.shoot && !prev.shoot,
     dodgePressed: keys.dodge && !prev.dodge,
   };
