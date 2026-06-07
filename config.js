@@ -24,6 +24,17 @@ export const DEFAULT_CONFIG = {
   apexGravityMult: 0.5,
   apexVyThreshold: 40, // px/s   |vy| below this gets reduced gravity
   jumpCutMult: 0.5,    // ascent cut on jump release
+  // --- Combat (J1), valeurs de départ PRD §5, calibrables au panneau debug ---
+  arrowSpeed: 220,        // px/s   vitesse initiale de la flèche
+  arrowGravity: 300,      // px/s²  arc balistique (< gravité joueur)
+  quiverStart: 3,         // flèches de départ
+  dodgeSpeed: 180,        // px/s   vitesse du dash d'esquive
+  dodgeDuration: 12,      // frames durée totale du dash
+  dodgeInvulnFrames: 8,   // frames fenêtre invuln + attrape (sous-ensemble)
+  dodgeCooldown: 24,      // frames anti-spam
+  selfArmFrames: 10,      // frames délai d'armement de l'auto-touche
+  stompBounceVy: -120,    // px/s   rebond vertical du stompeur
+  roundsToWin: 5,         // manches pour gagner le match
   // mirror the geometry so updatePlayer needs only cfg
   TILE, W, H, PLAYER_W, PLAYER_H,
 };
