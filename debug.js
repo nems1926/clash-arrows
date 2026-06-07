@@ -14,6 +14,7 @@ const PARAMS = [
   ['dodgeSpeed', 0, 400], ['dodgeDuration', 0, 40], ['dodgeInvulnFrames', 0, 40],
   ['dodgeCooldown', 0, 60], ['selfArmFrames', 0, 60], ['stompBounceVy', -300, 0],
   ['roundsToWin', 1, 15],
+  ['explosionRadius', 0, 80], ['pickupRespawnFrames', 0, 1200], ['quiverCapacity', 1, 12],
 ];
 
 export function createDebug(cfg) {
@@ -32,7 +33,7 @@ export function createDebug(cfg) {
     const slider = document.createElement('input');
     slider.type = 'range';
     slider.min = min; slider.max = max;
-    const isInt = key.endsWith('Frames') || ['quiverStart', 'dodgeDuration', 'dodgeCooldown', 'roundsToWin'].includes(key);
+    const isInt = key.endsWith('Frames') || ['quiverStart', 'dodgeDuration', 'dodgeCooldown', 'roundsToWin', 'quiverCapacity', 'pickupRespawnFrames'].includes(key);
     slider.step = isInt ? 1 : (max - min) / 200;
     slider.value = cfg[key];
     const val = document.createElement('span');

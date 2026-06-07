@@ -9,6 +9,7 @@ const COL = {
   destruct: '#a16207',
   arrow: '#fcd34d',
   aim: '#f87171',
+  shield: '#e2e8f0',
 };
 
 export const PLAYER_COLORS = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24']; // P1..P4
@@ -45,6 +46,11 @@ export function drawWorld(grid, players) {
       for (const dy of [-H, 0, H]) {
         rect(player.x + dx, player.y + dy, player.w, player.h);
       }
+    }
+    if (player.shield) {
+      stroke(COL.shield); strokeWeight(1); noFill();
+      rect(player.x - 1, player.y - 1, player.w + 2, player.h + 2);
+      noStroke();
     }
     if (player.aimDir) {
       stroke(COL.aim); strokeWeight(1);
@@ -85,5 +91,16 @@ export function drawExplosions(explosions) {
     fill(255, 200, 80, 200 * a);
     circle(e.x, e.y, e.r * 2);
   }
+  pop();
+}
+
+export function drawPickup(pickup) {
+  if (!pickup.active) return;
+  push();
+  translate(-W * SCALE / 2, -H * SCALE / 2);
+  scale(SCALE);
+  noStroke();
+  fill(pickup.type === 'bomb' ? ARROW_TYPES.bomb.color : COL.shield);
+  rect(pickup.x, pickup.y, pickup.w, pickup.h);
   pop();
 }

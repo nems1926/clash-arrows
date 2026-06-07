@@ -38,6 +38,7 @@ export const DEFAULT_CONFIG = {
   stompBounceVy: -120,    // px/s   rebond vertical du stompeur
   explosionRadius: 24,    // px     rayon de l'explosion de bombe
   roundsToWin: 5,         // manches pour gagner le match
+  pickupRespawnFrames: 360, // ~6s avant réapparition d'un pickup
   // mirror the geometry so updatePlayer needs only cfg
   TILE, W, H, PLAYER_W, PLAYER_H,
 };

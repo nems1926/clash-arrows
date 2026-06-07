@@ -2,12 +2,13 @@ import { DEFAULT_CONFIG, W, H, SCALE } from './config.js';
 import { ARENA_A, parseArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeIntent } from './input.js';
-import { drawWorld, drawArrows, drawExplosions } from './render.js';
+import { drawWorld, drawArrows, drawExplosions, drawPickup } from './render.js';
 import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow, release } from './arrow.js';
 import { EMPTY } from './tilemap.js';
-import { canShoot, shootType, addArrow } from './quiver.js';
+import { canShoot, shootType, addArrow, fillWith } from './quiver.js';
+import { createPickup, chooseSpawn, randomType } from './pickup.js';
 import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
 import { createGame, advance } from './game.js';
@@ -23,13 +24,15 @@ if (!navigator.gpu) {
   noSmooth();
 
   const cfg = { ...DEFAULT_CONFIG };
-  const { grid, spawns } = parseArena(ARENA_A);
+  const { grid, spawns, pickupSpawns } = parseArena(ARENA_A);
   const dbg = createDebug(cfg);
 
   const FIXED = 1 / 60;
   let acc = 0;
   const arrowPool = createPool(32);
   const explosions = []; // transient visual flashes: { x, y, r, life }
+  const pickup = createPickup();
+  let pickupTimer = cfg.pickupRespawnFrames;
   const game = createGame();                       // starts in 'LOBBY'
   const joins = { gamepads: new Set(), keyboard: false };
   let players = [];
@@ -63,6 +66,30 @@ if (!navigator.gpu) {
     explosions.push({ x, y, r: cfg.explosionRadius, life: 12 });
   }
 
+  function updatePickups() {
+    if (!pickup.active) {
+      if (--pickupTimer <= 0) {
+        const pt = chooseSpawn(pickupSpawns, Math.random);
+        if (pt) {
+          pickup.active = true;
+          pickup.type = randomType(Math.random);
+          pickup.x = pt.col * cfg.TILE + (cfg.TILE - pickup.w) / 2;
+          pickup.y = pt.row * cfg.TILE + (cfg.TILE - pickup.h) / 2;
+        }
+      }
+      return;
+    }
+    for (const p of players) {
+      if (p.state === 'DEAD') continue;
+      if (!toroidalOverlap({ x: p.x, y: p.y, w: p.w, h: p.h }, pickup, cfg.W, cfg.H)) continue;
+      if (pickup.type === 'bomb') fillWith(p, 'bomb', cfg.quiverCapacity);
+      else p.shield = true;
+      pickup.active = false;
+      pickupTimer = cfg.pickupRespawnFrames;
+      break;
+    }
+  }
+
   // Reset all players to their spawn for a new round; recycle every arrow.
   function respawnAll() {
     for (const a of arrowPool) release(arrowPool, a);
@@ -77,6 +104,8 @@ if (!navigator.gpu) {
       p.dodgeTime = 0; p.invulnTime = 0; p.dodgeCooldownTimer = 0;
       p.prevBottom = y + p.h;
     }
+    pickup.active = false;
+    pickupTimer = cfg.pickupRespawnFrames;
   }
 
   const readSource = (p) =>
@@ -155,6 +184,8 @@ if (!navigator.gpu) {
         if (isStomp(s, v)) { killOrShield(v); s.vy = cfg.stompBounceVy; }
       }
     }
+
+    updatePickups();
   }
 
   q5.update = function () {
@@ -203,6 +234,7 @@ if (!navigator.gpu) {
     drawWorld(grid, players);
     drawArrows(arrowPool);
     drawExplosions(explosions);
+    drawPickup(pickup);
     drawHud(players);
     if (game.state === 'ROUND_END') {
       fill('#fcd34d');
