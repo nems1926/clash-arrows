@@ -6,6 +6,8 @@ const COL = {
   solid: '#6b7280',
   oneway: '#38bdf8',
   player: '#4ade80',
+  arrow: '#fcd34d',
+  aim: '#f87171',
 };
 
 export function drawWorld(grid, player) {
@@ -37,5 +39,31 @@ export function drawWorld(grid, player) {
     }
   }
 
+  // aim indicator: a short line from the player center along aimDir
+  if (player.aimDir) {
+    stroke(COL.aim); strokeWeight(1);
+    const cx = player.x + player.w / 2;
+    const cy = player.y + player.h / 2;
+    line(cx, cy, cx + player.aimDir.x * 8, cy + player.aimDir.y * 8);
+    noStroke();
+  }
+
+  pop();
+}
+
+export function drawArrows(arrows) {
+  push();
+  translate(-W * SCALE / 2, -H * SCALE / 2);
+  scale(SCALE);
+  noStroke();
+  fill(COL.arrow);
+  for (const a of arrows) {
+    if (!a.active) continue;
+    for (const dx of [-W, 0, W]) {
+      for (const dy of [-H, 0, H]) {
+        rect(a.x + dx, a.y + dy, a.w, a.h);
+      }
+    }
+  }
   pop();
 }

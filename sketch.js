@@ -2,8 +2,11 @@ import { DEFAULT_CONFIG, W, H, SCALE } from './config.js';
 import { ARENA_A, parseArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, computeIntent } from './input.js';
-import { drawWorld } from './render.js';
+import { drawWorld, drawArrows } from './render.js';
 import { createDebug, drawDebug } from './debug.js';
+import { aimVector } from './aim.js';
+import { createPool, acquire, spawnArrow, updateArrow } from './arrow.js';
+import { canShoot, spendArrow } from './quiver.js';
 
 if (!navigator.gpu) {
   document.body.innerHTML =
@@ -21,9 +24,10 @@ if (!navigator.gpu) {
   const player = createPlayer(sp.col * cfg.TILE, sp.row * cfg.TILE, cfg);
   const dbg = createDebug(cfg);
 
-  let prevKeys = { left: false, right: false, up: false, down: false, jump: false };
+  let prevKeys = { left: false, right: false, up: false, down: false, jump: false, shoot: false, dodge: false };
   const FIXED = 1 / 60;
   let acc = 0;
+  const arrowPool = createPool(32);
 
   q5.update = function () {
     acc += Math.min(deltaTime / 1000, 0.1); // clamp to avoid spiral of death
@@ -31,10 +35,21 @@ if (!navigator.gpu) {
       const keys = readKeys();
       const intent = computeIntent(keys, prevKeys);
       updatePlayer(player, intent, cfg, grid, FIXED);
+      if (intent.shootPressed && canShoot(player)) {
+        const a = acquire(arrowPool);
+        if (a) {
+          spendArrow(player);
+          const cx = player.x + player.w / 2;
+          const cy = player.y + player.h / 2;
+          spawnArrow(a, cx, cy, player.aimDir.x, player.aimDir.y, 0, cfg);
+        }
+      }
+      for (const a of arrowPool) updateArrow(a, cfg, grid, FIXED);
       prevKeys = keys;
       acc -= FIXED;
     }
     drawWorld(grid, player);
+    drawArrows(arrowPool);
     drawDebug(dbg, player);
   };
 
