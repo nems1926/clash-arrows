@@ -1,5 +1,5 @@
 import { DEFAULT_CONFIG, W, H, SCALE } from './config.js';
-import { ARENA_A, ARENAS, parseArena, pickRandomArena } from './arena.js';
+import { ARENA_A, parseArena, pickRandomArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeIntent } from './input.js';
 import { drawWorld, drawArrows, drawExplosions, drawPickup } from './render.js';
