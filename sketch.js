@@ -1,12 +1,13 @@
 import { DEFAULT_CONFIG, W, H, SCALE } from './config.js';
 import { ARENA_A, parseArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
-import { readKeys, readKeys2, computeIntent } from './input.js';
+import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeIntent } from './input.js';
 import { drawWorld, drawArrows } from './render.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow } from './arrow.js';
 import { canShoot, spendArrow, addArrow } from './quiver.js';
 import { toroidalOverlap, canCatch, arrowLethal, isStomp } from './combat.js';
+import { resolveSlots } from './lobby.js';
 
 if (!navigator.gpu) {
   document.body.innerHTML =
@@ -20,9 +21,12 @@ if (!navigator.gpu) {
 
   const cfg = { ...DEFAULT_CONFIG };
   const { grid, spawns } = parseArena(ARENA_A);
-  const players = spawns.slice(0, 2).map((sp, i) => {
+  const slots = resolveSlots({ gamepads: connectedGamepadIndices(), keyboard: true });
+  const players = slots.map((slot, i) => {
+    const sp = spawns[i % spawns.length];
     const p = createPlayer(sp.col * cfg.TILE, sp.row * cfg.TILE, cfg);
     p.index = i;
+    p.source = slot;
     p.prevKeys = { left: false, right: false, up: false, down: false, jump: false, shoot: false, dodge: false };
     return p;
   });
@@ -37,7 +41,9 @@ if (!navigator.gpu) {
     while (acc >= FIXED) {
       for (const p of players) {
         if (p.state === 'DEAD') continue;
-        const keys = p.index === 0 ? readKeys() : readKeys2();
+        const keys = p.source.type === 'keyboard'
+          ? readKeys()
+          : readGamepad(getGamepad(p.source.index));
         const intent = computeIntent(keys, p.prevKeys);
         updatePlayer(p, intent, cfg, grid, FIXED);
         if (intent.shootPressed && canShoot(p)) {
