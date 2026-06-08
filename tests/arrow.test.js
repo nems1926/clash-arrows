@@ -115,3 +115,33 @@ describe('bomb arrow impact', () => {
     expect(normal.state).toBe('STUCK');
   });
 });
+
+describe('arrow type table & typed spawn (J3)', () => {
+  it('exposes the new types with their flags', () => {
+    expect(ARROW_TYPES.superbomb.explosive).toBe(true);
+    expect(ARROW_TYPES.superbomb.radiusMult).toBe(2);
+    expect(ARROW_TYPES.laser.bounces).toBe(3);
+    expect(ARROW_TYPES.laser.flat).toBe(true);
+    expect(ARROW_TYPES.bolt.splitCount).toBe(3);
+    expect(ARROW_TYPES.drill.pierces).toBe(true);
+  });
+  it('spawn applies speedMult and inits bounces', () => {
+    const c = cfg();
+    const a = createArrow();
+    spawnArrow(a, 100, 50, 1, 0, 0, c, 'laser');
+    expect(a.vx).toBeCloseTo(c.arrowSpeed * 1.6, 5);
+    expect(a.bounces).toBe(3);
+    const n = createArrow();
+    spawnArrow(n, 100, 50, 1, 0, 0, c, 'normal');
+    expect(n.vx).toBeCloseTo(c.arrowSpeed, 5);
+    expect(n.bounces).toBe(0);
+  });
+  it('flat arrows ignore gravity past the straight distance', () => {
+    const c = cfg();
+    const a = createArrow();
+    spawnArrow(a, 0, 50, 1, 0, 0, c, 'laser'); // flat
+    a.traveled = c.arrowStraightDist + 10;     // past gravity onset
+    updateArrow(a, c, emptyGrid, DT);
+    expect(a.vy).toBe(0);                       // still no gravity
+  });
+});

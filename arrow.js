@@ -1,10 +1,20 @@
 import { arrowBoxHitsTile, wrap } from './tilemap.js';
 
-// Pluggable arrow types. `color` drives rendering; `explosive` decides the
-// terrain-impact state. New types (laser, bolt…) slot in here later.
+// Pluggable arrow types. Declarative fields drive behavior:
+//  explosive  → terrain impact yields EXPLODE
+//  radiusMult → multiplies cfg.explosionRadius on explosion
+//  speedMult  → multiplies cfg.arrowSpeed at spawn
+//  flat       → no gravity (straight shot)
+//  bounces    → reflections off solid/destruct before planting (laser)
+//  splitCount → fragments spawned on impact (bolt)
+//  pierces    → only SOLID stops it (passes one-way/destructibles)
 export const ARROW_TYPES = {
-  normal: { color: '#fcd34d', explosive: false },
-  bomb: { color: '#fb7185', explosive: true },
+  normal:    { color: '#fcd34d' },
+  bomb:      { color: '#fb7185', explosive: true },
+  superbomb: { color: '#f43f5e', explosive: true, radiusMult: 2 },
+  laser:     { color: '#38bdf8', speedMult: 1.6, flat: true, bounces: 3 },
+  bolt:      { color: '#c084fc', speedMult: 2.0, flat: true, splitCount: 3 },
+  drill:     { color: '#fbbf24', speedMult: 1.2, pierces: true },
 };
 
 export function createArrow() {
@@ -15,22 +25,26 @@ export function createArrow() {
     owner: -1, ageFrames: 0,
     type: 'normal',
     traveled: 0,             // path distance flown so far (gates gravity onset)
+    bounces: 0,              // remaining laser reflections
     w: 6, h: 2,
   };
 }
 
 // (Re)activate a pooled arrow flying from (x,y) along unit vector (dx,dy).
 export function spawnArrow(a, x, y, dx, dy, owner, cfg, type = 'normal') {
+  const def = ARROW_TYPES[type] || {};
+  const speed = cfg.arrowSpeed * (def.speedMult || 1);
   a.active = true;
   a.state = 'IN_FLIGHT';
   a.x = x; a.y = y;
   a.dirX = dx; a.dirY = dy;
-  a.vx = dx * cfg.arrowSpeed;
-  a.vy = dy * cfg.arrowSpeed;
+  a.vx = dx * speed;
+  a.vy = dy * speed;
   a.owner = owner;
   a.ageFrames = 0;
   a.traveled = 0;
   a.type = type;
+  a.bounces = def.bounces || 0;
   return a;
 }
 
@@ -40,7 +54,7 @@ export function updateArrow(a, cfg, grid, dt) {
   // Straight flight first: gravity only kicks in after the arrow has flown
   // ~a third of the screen (cfg.arrowStraightDist), giving a flat shot that
   // then arcs down.
-  if (a.traveled >= cfg.arrowStraightDist) {
+  if (!ARROW_TYPES[a.type]?.flat && a.traveled >= cfg.arrowStraightDist) {
     a.vy += cfg.arrowGravity * dt;
   }
   // Sub-step the move (~1px increments) so a fast arrow plants flush against the
