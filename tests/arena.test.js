@@ -44,8 +44,8 @@ describe('ARENA_A', () => {
 });
 
 describe('arena set', () => {
-  it('exposes 3 arenas', () => {
-    expect(ARENAS).toHaveLength(3);
+  it('exposes 6 arenas', () => {
+    expect(ARENAS).toHaveLength(6);
   });
   it('every arena is 32x18, has >=4 player spawns and >=1 pickup spawn', () => {
     for (const ascii of ARENAS) {
@@ -58,6 +58,6 @@ describe('arena set', () => {
   });
   it('pickRandomArena returns one of the arenas via injected rand', () => {
     expect(pickRandomArena(() => 0)).toBe(ARENAS[0]);
-    expect(pickRandomArena(() => 0.99)).toBe(ARENAS[2]);
+    expect(pickRandomArena(() => 0.99)).toBe(ARENAS[5]);
   });
 });
