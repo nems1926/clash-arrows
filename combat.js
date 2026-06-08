@@ -1,4 +1,4 @@
-import { DESTRUCT, cellAt } from './tilemap.js';
+import { DESTRUCT, SPIKE, cellAt } from './tilemap.js';
 
 // AABBs are top-left {x,y,w,h} in logical coords.
 export function aabbOverlap(a, b) {
@@ -73,6 +73,20 @@ export function destructibleCellsInRadius(grid, cx, cy, radius, TILE, W, H) {
     }
   }
   return out;
+}
+
+// True if the player's AABB overlaps any SPIKE cell (a lethal floor hazard).
+export function spikeOverlap(grid, player, TILE) {
+  const c0 = Math.floor(player.x / TILE);
+  const c1 = Math.floor((player.x + player.w - 0.001) / TILE);
+  const r0 = Math.floor(player.y / TILE);
+  const r1 = Math.floor((player.y + player.h - 0.001) / TILE);
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      if (cellAt(grid, c, r) === SPIKE) return true;
+    }
+  }
+  return false;
 }
 
 // stomper kills victim on a vertical-from-above contact: descending, horizontally

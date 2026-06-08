@@ -1,5 +1,5 @@
-// A single arena pickup. `type` is 'bomb' (fills the quiver with bombs) or
-// 'shield' (grants a one-hit shield). x,y are top-left logical coords.
+// A single arena pickup. `type` is 'shield' (one-hit shield) or a special arrow
+// type from PICKUP_TYPES (adds a few of that arrow). x,y are top-left logical coords.
 export function createPickup() {
   return { active: false, type: 'shield', x: 0, y: 0, w: 8, h: 8 };
 }
@@ -10,6 +10,9 @@ export function chooseSpawn(points, rand) {
   return points[Math.floor(rand() * points.length)];
 }
 
+// Pool of pickup payloads: 'shield' (one-hit shield) or a special arrow type.
+export const PICKUP_TYPES = ['shield', 'bomb', 'superbomb', 'laser', 'bolt', 'drill'];
+
 export function randomType(rand) {
-  return rand() < 0.5 ? 'bomb' : 'shield';
+  return PICKUP_TYPES[Math.floor(rand() * PICKUP_TYPES.length)];
 }

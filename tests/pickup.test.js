@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createPickup, chooseSpawn, randomType } from '../pickup.js';
+import { createPickup, chooseSpawn, randomType, PICKUP_TYPES } from '../pickup.js';
 
 describe('pickup helpers', () => {
   it('createPickup is inactive by default', () => {
@@ -12,8 +12,12 @@ describe('pickup helpers', () => {
     expect(chooseSpawn(pts, () => 0.99)).toEqual({ col: 9, row: 3 });
     expect(chooseSpawn([], () => 0)).toBe(null);
   });
-  it('randomType returns bomb or shield from the injected rand', () => {
-    expect(randomType(() => 0.2)).toBe('bomb');
-    expect(randomType(() => 0.8)).toBe('shield');
+  it('PICKUP_TYPES includes shield and the special arrows', () => {
+    expect(PICKUP_TYPES).toEqual(['shield', 'bomb', 'superbomb', 'laser', 'bolt', 'drill']);
+  });
+  it('randomType indexes PICKUP_TYPES via the injected rand', () => {
+    expect(randomType(() => 0)).toBe('shield');
+    expect(randomType(() => 0.5)).toBe('laser');   // floor(0.5*6)=3
+    expect(randomType(() => 0.99)).toBe('drill');  // floor(5.94)=5
   });
 });

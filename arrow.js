@@ -1,10 +1,20 @@
-import { arrowBoxHitsTile, wrap } from './tilemap.js';
+import { arrowBoxStops, tileHitAxis, wrap } from './tilemap.js';
 
-// Pluggable arrow types. `color` drives rendering; `explosive` decides the
-// terrain-impact state. New types (laser, bolt…) slot in here later.
+// Pluggable arrow types. Declarative fields drive behavior:
+//  explosive  → terrain impact yields EXPLODE
+//  radiusMult → multiplies cfg.explosionRadius on explosion
+//  speedMult  → multiplies cfg.arrowSpeed at spawn
+//  flat       → no gravity (straight shot)
+//  bounces    → reflections off solid/destruct before planting (laser)
+//  splitCount → fragments spawned on impact (bolt)
+//  pierces    → only SOLID stops it (passes one-way/destructibles)
 export const ARROW_TYPES = {
-  normal: { color: '#fcd34d', explosive: false },
-  bomb: { color: '#fb7185', explosive: true },
+  normal:    { color: '#fcd34d' },
+  bomb:      { color: '#fb7185', explosive: true },
+  superbomb: { color: '#f43f5e', explosive: true, radiusMult: 2 },
+  laser:     { color: '#38bdf8', speedMult: 1.6, flat: true, bounces: 3 },
+  bolt:      { color: '#c084fc', speedMult: 2.0, flat: true, splitCount: 3 },
+  drill:     { color: '#fbbf24', speedMult: 1.2, pierces: true },
 };
 
 export function createArrow() {
@@ -15,23 +25,40 @@ export function createArrow() {
     owner: -1, ageFrames: 0,
     type: 'normal',
     traveled: 0,             // path distance flown so far (gates gravity onset)
+    bounces: 0,              // remaining laser reflections
     w: 6, h: 2,
   };
 }
 
 // (Re)activate a pooled arrow flying from (x,y) along unit vector (dx,dy).
 export function spawnArrow(a, x, y, dx, dy, owner, cfg, type = 'normal') {
+  const def = ARROW_TYPES[type] || {};
+  const speed = cfg.arrowSpeed * (def.speedMult || 1);
   a.active = true;
   a.state = 'IN_FLIGHT';
   a.x = x; a.y = y;
   a.dirX = dx; a.dirY = dy;
-  a.vx = dx * cfg.arrowSpeed;
-  a.vy = dy * cfg.arrowSpeed;
+  a.vx = dx * speed;
+  a.vy = dy * speed;
   a.owner = owner;
   a.ageFrames = 0;
   a.traveled = 0;
   a.type = type;
+  a.bounces = def.bounces || 0;
   return a;
+}
+
+// `count` unit directions fanned within ±spread radians around (dirX,dirY).
+// Used by the bolt arrow to scatter fragments on impact.
+export function splitDirections(dirX, dirY, count, spread) {
+  const base = Math.atan2(dirY, dirX);
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const t = count === 1 ? 0 : (i / (count - 1)) * 2 - 1; // -1..1
+    const ang = base + t * spread;
+    out.push({ x: Math.cos(ang), y: Math.sin(ang) });
+  }
+  return out;
 }
 
 export function updateArrow(a, cfg, grid, dt) {
@@ -40,7 +67,7 @@ export function updateArrow(a, cfg, grid, dt) {
   // Straight flight first: gravity only kicks in after the arrow has flown
   // ~a third of the screen (cfg.arrowStraightDist), giving a flat shot that
   // then arcs down.
-  if (a.traveled >= cfg.arrowStraightDist) {
+  if (!ARROW_TYPES[a.type]?.flat && a.traveled >= cfg.arrowStraightDist) {
     a.vy += cfg.arrowGravity * dt;
   }
   // Sub-step the move (~1px increments) so a fast arrow plants flush against the
@@ -55,8 +82,16 @@ export function updateArrow(a, cfg, grid, dt) {
   for (let i = 0; i < steps; i++) {
     const nx = wrap(a.x + sx, cfg.W);
     const ny = wrap(a.y + sy, cfg.H);
-    if (arrowBoxHitsTile(grid, nx, ny, a.w, a.h, cfg.TILE)) {
-      a.state = ARROW_TYPES[a.type]?.explosive ? 'EXPLODE' : 'STUCK';
+    if (arrowBoxStops(grid, nx, ny, a.w, a.h, cfg.TILE, a.type)) {
+      const def = ARROW_TYPES[a.type] || {};
+      if (def.bounces && a.bounces > 0) {
+        const axis = tileHitAxis(grid, a.x, a.y, nx, ny, a.w, a.h, cfg.TILE, a.type);
+        if (axis.x) a.vx = -a.vx;
+        if (axis.y) a.vy = -a.vy;
+        a.bounces--;
+        return a; // resume next frame with reflected velocity
+      }
+      a.state = def.explosive ? 'EXPLODE' : (def.splitCount ? 'SPLIT' : 'STUCK');
       a.vx = 0; a.vy = 0;
       return a; // rest at the last clear position (a.x, a.y)
     }

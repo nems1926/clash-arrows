@@ -5,11 +5,11 @@ import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeInte
 import { drawWorld, drawArrows, drawExplosions, drawPickup } from './render.js';
 import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
-import { createPool, acquire, spawnArrow, updateArrow, release } from './arrow.js';
+import { createPool, acquire, spawnArrow, updateArrow, release, ARROW_TYPES, splitDirections } from './arrow.js';
 import { EMPTY } from './tilemap.js';
-import { canShoot, shootType, addArrow, fillWith } from './quiver.js';
+import { canShoot, shootType, addArrow, addArrows } from './quiver.js';
 import { createPickup, chooseSpawn, randomType } from './pickup.js';
-import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius } from './combat.js';
+import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
 import { createGame, advance } from './game.js';
 
@@ -56,14 +56,15 @@ if (!navigator.gpu) {
     });
   }
 
-  function explodeAt(x, y) {
-    for (const p of playersInRadius(players, x, y, cfg.explosionRadius, cfg.W, cfg.H)) {
+  function explodeAt(x, y, type = 'bomb') {
+    const radius = cfg.explosionRadius * (ARROW_TYPES[type]?.radiusMult || 1);
+    for (const p of playersInRadius(players, x, y, radius, cfg.W, cfg.H)) {
       if (p.state !== 'DEAD' && !isInvulnerable(p)) killOrShield(p);
     }
-    for (const { r, c } of destructibleCellsInRadius(grid, x, y, cfg.explosionRadius, cfg.TILE, cfg.W, cfg.H)) {
+    for (const { r, c } of destructibleCellsInRadius(grid, x, y, radius, cfg.TILE, cfg.W, cfg.H)) {
       grid[r][c] = EMPTY;
     }
-    explosions.push({ x, y, r: cfg.explosionRadius, life: 12 });
+    explosions.push({ x, y, r: radius, life: 12 });
   }
 
   function updatePickups() {
@@ -82,8 +83,8 @@ if (!navigator.gpu) {
     for (const p of players) {
       if (p.state === 'DEAD') continue;
       if (!toroidalOverlap({ x: p.x, y: p.y, w: p.w, h: p.h }, pickup, cfg.W, cfg.H)) continue;
-      if (pickup.type === 'bomb') fillWith(p, 'bomb', cfg.quiverCapacity);
-      else p.shield = true;
+      if (pickup.type === 'shield') p.shield = true;
+      else addArrows(p, pickup.type, cfg.pickupArrowCount, cfg.quiverCapacity);
       pickup.active = false;
       pickupTimer = cfg.pickupRespawnFrames;
       break;
@@ -160,9 +161,18 @@ if (!navigator.gpu) {
     }
     for (const a of arrowPool) updateArrow(a, cfg, grid, FIXED);
 
-    // terrain-triggered bomb explosions
+    // terrain-triggered effects: bomb/superbomb explode, bolt splits into fragments
     for (const a of arrowPool) {
-      if (a.active && a.state === 'EXPLODE') { explodeAt(a.x, a.y); a.active = false; }
+      if (!a.active) continue;
+      if (a.state === 'EXPLODE') { explodeAt(a.x, a.y, a.type); a.active = false; }
+      else if (a.state === 'SPLIT') {
+        const dirs = splitDirections(a.dirX, a.dirY, ARROW_TYPES[a.type].splitCount, Math.PI / 6);
+        for (const d of dirs) {
+          const frag = acquire(arrowPool);
+          if (frag) spawnArrow(frag, a.x, a.y, d.x, d.y, a.owner, cfg, 'normal');
+        }
+        a.active = false;
+      }
     }
 
     // arrow -> player resolution: pickup / catch / death
@@ -177,7 +187,7 @@ if (!navigator.gpu) {
         if (a.state === 'STUCK') { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (canCatch(p)) { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (arrowLethal(a, p.index, cfg)) {
-          if (a.type === 'bomb') explodeAt(a.x, a.y);
+          if (ARROW_TYPES[a.type]?.explosive) explodeAt(a.x, a.y, a.type);
           else killOrShield(p);
           a.active = false;
         }
@@ -191,6 +201,12 @@ if (!navigator.gpu) {
         if (v === s || v.state === 'DEAD') continue;
         if (isStomp(s, v)) { killOrShield(v); s.vy = cfg.stompBounceVy; }
       }
+    }
+
+    // spikes kill on contact (shield absorbs, dodge-invuln survives)
+    for (const p of players) {
+      if (p.state === 'DEAD' || isInvulnerable(p)) continue;
+      if (spikeOverlap(grid, p, cfg.TILE)) killOrShield(p);
     }
 
     updatePickups();

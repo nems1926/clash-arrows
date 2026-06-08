@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseArena, ARENA_A, ARENAS, pickRandomArena } from '../arena.js';
-import { SOLID, ONEWAY, EMPTY, DESTRUCT } from '../tilemap.js';
+import { SOLID, ONEWAY, EMPTY, DESTRUCT, SPIKE } from '../tilemap.js';
 
 describe('parseArena', () => {
   it('maps characters to cell codes and collects spawns', () => {
@@ -26,6 +26,13 @@ describe('parseArena pickup spawns', () => {
   });
 });
 
+describe('parseArena spikes', () => {
+  it('maps ^ to SPIKE (non-blocking hazard)', () => {
+    const { grid } = parseArena(['..^..']);
+    expect(grid[0][2]).toBe(SPIKE);
+  });
+});
+
 describe('ARENA_A', () => {
   it('is 18 rows of 32 columns', () => {
     expect(ARENA_A).toHaveLength(18);
@@ -37,8 +44,8 @@ describe('ARENA_A', () => {
 });
 
 describe('arena set', () => {
-  it('exposes 3 arenas', () => {
-    expect(ARENAS).toHaveLength(3);
+  it('exposes 6 arenas', () => {
+    expect(ARENAS).toHaveLength(6);
   });
   it('every arena is 32x18, has >=4 player spawns and >=1 pickup spawn', () => {
     for (const ascii of ARENAS) {
@@ -51,6 +58,6 @@ describe('arena set', () => {
   });
   it('pickRandomArena returns one of the arenas via injected rand', () => {
     expect(pickRandomArena(() => 0)).toBe(ARENAS[0]);
-    expect(pickRandomArena(() => 0.99)).toBe(ARENAS[2]);
+    expect(pickRandomArena(() => 0.99)).toBe(ARENAS[5]);
   });
 });

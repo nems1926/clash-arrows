@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { createArrow, spawnArrow, updateArrow, createPool, acquire, release, ARROW_TYPES } from '../arrow.js';
-import { arrowBoxHitsTile } from '../tilemap.js';
+import { createArrow, spawnArrow, updateArrow, createPool, acquire, release, ARROW_TYPES, splitDirections } from '../arrow.js';
+import { arrowBoxHitsTile, SOLID, ONEWAY, DESTRUCT } from '../tilemap.js';
 import { DEFAULT_CONFIG } from '../config.js';
 
 const DT = 1 / 60;
@@ -113,5 +113,110 @@ describe('bomb arrow impact', () => {
     spawnArrow(normal, 110, 55, 1, 0, 0, c, 'normal');
     for (let i = 0; i < 10 && normal.state === 'IN_FLIGHT'; i++) updateArrow(normal, c, grid, DT);
     expect(normal.state).toBe('STUCK');
+  });
+});
+
+describe('arrow type table & typed spawn (J3)', () => {
+  it('exposes the new types with their flags', () => {
+    expect(ARROW_TYPES.superbomb.explosive).toBe(true);
+    expect(ARROW_TYPES.superbomb.radiusMult).toBe(2);
+    expect(ARROW_TYPES.laser.bounces).toBe(3);
+    expect(ARROW_TYPES.laser.flat).toBe(true);
+    expect(ARROW_TYPES.bolt.splitCount).toBe(3);
+    expect(ARROW_TYPES.drill.pierces).toBe(true);
+  });
+  it('spawn applies speedMult and inits bounces', () => {
+    const c = cfg();
+    const a = createArrow();
+    spawnArrow(a, 100, 50, 1, 0, 0, c, 'laser');
+    expect(a.vx).toBeCloseTo(c.arrowSpeed * 1.6, 5);
+    expect(a.bounces).toBe(3);
+    const n = createArrow();
+    spawnArrow(n, 100, 50, 1, 0, 0, c, 'normal');
+    expect(n.vx).toBeCloseTo(c.arrowSpeed, 5);
+    expect(n.bounces).toBe(0);
+  });
+  it('flat arrows ignore gravity past the straight distance', () => {
+    const c = cfg();
+    const a = createArrow();
+    spawnArrow(a, 0, 50, 1, 0, 0, c, 'laser'); // flat
+    a.traveled = c.arrowStraightDist + 10;     // past gravity onset
+    updateArrow(a, c, emptyGrid, DT);
+    expect(a.vy).toBe(0);                       // still no gravity
+  });
+});
+
+describe('drill arrow pierces thin tiles, stops on solid', () => {
+  it('passes one-way and destructible, plants on the first solid', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    grid[5][12] = ONEWAY;   // x 120..130, drill passes
+    grid[5][15] = DESTRUCT; // x 150..160, drill passes
+    // Solid wall at col 18 (x 180..190): fill multiple rows so the
+    // ballistic arc of the drill (which drifts downward) hits it regardless of row
+    for (let row = 5; row <= 9; row++) grid[row][18] = SOLID;
+    const drill = createArrow();
+    spawnArrow(drill, 100, 55, 1, 0, 0, c, 'drill'); // row5
+    for (let i = 0; i < 80 && drill.state === 'IN_FLIGHT'; i++) updateArrow(drill, c, grid, DT);
+    expect(drill.state).toBe('STUCK');
+    expect(drill.x).toBeGreaterThan(160); // got past the one-way and destructible
+  });
+});
+
+describe('laser arrow bounces then plants', () => {
+  it('reflects velocity on a wall and decrements bounces', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    for (let r = 0; r < 18; r++) grid[r][20] = SOLID; // vertical wall at x 200
+    const laser = createArrow();
+    spawnArrow(laser, 100, 55, 1, 0, 0, c, 'laser');
+    let bounced = false;
+    for (let i = 0; i < 60 && !bounced; i++) {
+      updateArrow(laser, c, grid, DT);
+      if (laser.vx < 0) bounced = true;
+    }
+    expect(bounced).toBe(true);
+    expect(laser.bounces).toBe(2);
+    expect(laser.state).toBe('IN_FLIGHT');
+  });
+  it('plants (STUCK) after exhausting its bounces', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    for (let r = 0; r < 18; r++) { grid[r][10] = SOLID; grid[r][20] = SOLID; } // corridor
+    const laser = createArrow();
+    spawnArrow(laser, 150, 55, 1, 0, 0, c, 'laser');
+    for (let i = 0; i < 600 && laser.state === 'IN_FLIGHT'; i++) updateArrow(laser, c, grid, DT);
+    expect(laser.state).toBe('STUCK');
+    expect(laser.bounces).toBe(0);
+  });
+});
+
+describe('splitDirections (bolt fan)', () => {
+  it('returns count unit vectors fanned around the base direction', () => {
+    const dirs = splitDirections(1, 0, 3, Math.PI / 6);
+    expect(dirs).toHaveLength(3);
+    expect(dirs[1].x).toBeCloseTo(1, 5);
+    expect(dirs[1].y).toBeCloseTo(0, 5);
+    expect(dirs[0].y).toBeCloseTo(Math.sin(-Math.PI / 6), 5);
+    expect(dirs[2].y).toBeCloseTo(Math.sin(Math.PI / 6), 5);
+    for (const d of dirs) expect(Math.hypot(d.x, d.y)).toBeCloseTo(1, 5);
+  });
+  it('a single fragment points along the base direction', () => {
+    const dirs = splitDirections(0, 1, 1, Math.PI / 6);
+    expect(dirs).toHaveLength(1);
+    expect(dirs[0].x).toBeCloseTo(0, 5);
+    expect(dirs[0].y).toBeCloseTo(1, 5);
+  });
+});
+
+describe('bolt arrow splits on impact', () => {
+  it('reaches SPLIT state on terrain impact', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    for (let r = 0; r < 18; r++) grid[r][20] = SOLID;
+    const bolt = createArrow();
+    spawnArrow(bolt, 100, 55, 1, 0, 0, c, 'bolt');
+    for (let i = 0; i < 40 && bolt.state === 'IN_FLIGHT'; i++) updateArrow(bolt, c, grid, DT);
+    expect(bolt.state).toBe('SPLIT');
   });
 });

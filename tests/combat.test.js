@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { aabbOverlap, toroidalOverlap, canCatch, isArmed, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius } from '../combat.js';
+import { aabbOverlap, toroidalOverlap, canCatch, isArmed, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap } from '../combat.js';
 import { DEFAULT_CONFIG } from '../config.js';
+import { SPIKE } from '../tilemap.js';
 
 const cfg = () => ({ ...DEFAULT_CONFIG });
 
@@ -95,5 +96,15 @@ describe('explosion & shield helpers', () => {
     ];
     const cells = destructibleCellsInRadius(grid, 15, 15, 8, 10, 30, 30); // near col1,row1 center (15,15)
     expect(cells).toEqual([{ r: 1, c: 1 }]);
+  });
+});
+
+describe('spikeOverlap', () => {
+  const grid = [[0, 0, 0], [0, SPIKE, 0], [0, 0, 0]]; // spike at col1,row1 (10..20)
+  it('true when the player AABB overlaps a spike cell', () => {
+    expect(spikeOverlap(grid, { x: 11, y: 11, w: 6, h: 6 }, 10)).toBe(true);
+  });
+  it('false when clear of spikes', () => {
+    expect(spikeOverlap(grid, { x: 0, y: 0, w: 6, h: 6 }, 10)).toBe(false);
   });
 });

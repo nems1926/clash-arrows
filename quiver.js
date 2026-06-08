@@ -12,6 +12,10 @@ export function addArrow(p, type, cap) {
   if (p.quiver.length < cap) p.quiver.push(type);
 }
 
+export function addArrows(p, type, n, cap) {
+  for (let i = 0; i < n && p.quiver.length < cap; i++) p.quiver.push(type);
+}
+
 export function fillWith(p, type, cap) {
   p.quiver = Array(cap).fill(type);
 }

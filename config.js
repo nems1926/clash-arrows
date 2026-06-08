@@ -40,6 +40,7 @@ export const DEFAULT_CONFIG = {
   explosionRadius: 24,    // px     rayon de l'explosion de bombe
   roundsToWin: 5,         // manches pour gagner le match
   pickupRespawnFrames: 360, // ~6s avant réapparition d'un pickup
+  pickupArrowCount: 3,    // flèches ajoutées au carquois par un pickup de type flèche
   // mirror the geometry so updatePlayer needs only cfg
   TILE, W, H, PLAYER_W, PLAYER_H,
 };
