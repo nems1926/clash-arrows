@@ -9,7 +9,7 @@ import { createPool, acquire, spawnArrow, updateArrow, release, ARROW_TYPES, spl
 import { EMPTY } from './tilemap.js';
 import { canShoot, shootType, addArrow, fillWith } from './quiver.js';
 import { createPickup, chooseSpawn, randomType } from './pickup.js';
-import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius } from './combat.js';
+import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
 import { createGame, advance } from './game.js';
 
@@ -201,6 +201,12 @@ if (!navigator.gpu) {
         if (v === s || v.state === 'DEAD') continue;
         if (isStomp(s, v)) { killOrShield(v); s.vy = cfg.stompBounceVy; }
       }
+    }
+
+    // spikes kill on contact (shield absorbs, dodge-invuln survives)
+    for (const p of players) {
+      if (p.state === 'DEAD' || isInvulnerable(p)) continue;
+      if (spikeOverlap(grid, p, cfg.TILE)) killOrShield(p);
     }
 
     updatePickups();

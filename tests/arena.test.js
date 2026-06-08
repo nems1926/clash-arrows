@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseArena, ARENA_A, ARENAS, pickRandomArena } from '../arena.js';
-import { SOLID, ONEWAY, EMPTY, DESTRUCT } from '../tilemap.js';
+import { SOLID, ONEWAY, EMPTY, DESTRUCT, SPIKE } from '../tilemap.js';
 
 describe('parseArena', () => {
   it('maps characters to cell codes and collects spawns', () => {
@@ -23,6 +23,13 @@ describe('parseArena pickup spawns', () => {
     const { grid, pickupSpawns } = parseArena(['..P..']);
     expect(pickupSpawns).toContainEqual({ col: 2, row: 0 });
     expect(grid[0][2]).toBe(0); // EMPTY, walkable
+  });
+});
+
+describe('parseArena spikes', () => {
+  it('maps ^ to SPIKE (non-blocking hazard)', () => {
+    const { grid } = parseArena(['..^..']);
+    expect(grid[0][2]).toBe(SPIKE);
   });
 });
 

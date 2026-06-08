@@ -1,4 +1,4 @@
-import { SOLID, ONEWAY, DESTRUCT } from './tilemap.js';
+import { SOLID, ONEWAY, DESTRUCT, SPIKE } from './tilemap.js';
 import { W, H, SCALE, TILE } from './config.js';
 import { ARROW_TYPES } from './arrow.js';
 
@@ -10,6 +10,7 @@ const COL = {
   arrow: '#fcd34d',
   aim: '#f87171',
   shield: '#e2e8f0',
+  spike: '#ef4444',
 };
 
 export const PLAYER_COLORS = ['#4ade80', '#60a5fa', '#f472b6', '#fbbf24']; // P1..P4
@@ -34,6 +35,13 @@ export function drawWorld(grid, players) {
       } else if (cell === DESTRUCT) {
         fill(COL.destruct);
         rect(c * TILE, r * TILE, TILE, TILE);
+      } else if (cell === SPIKE) {
+        fill(COL.spike);
+        const n = 3, bw = TILE / n;
+        for (let k = 0; k < n; k++) {
+          const bx = c * TILE + k * bw;
+          triangle(bx, r * TILE + TILE, bx + bw / 2, r * TILE, bx + bw, r * TILE + TILE);
+        }
       }
     }
   }
