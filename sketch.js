@@ -56,14 +56,15 @@ if (!navigator.gpu) {
     });
   }
 
-  function explodeAt(x, y) {
-    for (const p of playersInRadius(players, x, y, cfg.explosionRadius, cfg.W, cfg.H)) {
+  function explodeAt(x, y, type = 'bomb') {
+    const radius = cfg.explosionRadius * (ARROW_TYPES[type]?.radiusMult || 1);
+    for (const p of playersInRadius(players, x, y, radius, cfg.W, cfg.H)) {
       if (p.state !== 'DEAD' && !isInvulnerable(p)) killOrShield(p);
     }
-    for (const { r, c } of destructibleCellsInRadius(grid, x, y, cfg.explosionRadius, cfg.TILE, cfg.W, cfg.H)) {
+    for (const { r, c } of destructibleCellsInRadius(grid, x, y, radius, cfg.TILE, cfg.W, cfg.H)) {
       grid[r][c] = EMPTY;
     }
-    explosions.push({ x, y, r: cfg.explosionRadius, life: 12 });
+    explosions.push({ x, y, r: radius, life: 12 });
   }
 
   function updatePickups() {
@@ -186,7 +187,7 @@ if (!navigator.gpu) {
         if (a.state === 'STUCK') { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (canCatch(p)) { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (arrowLethal(a, p.index, cfg)) {
-          if (a.type === 'bomb') explodeAt(a.x, a.y);
+          if (ARROW_TYPES[a.type]?.explosive) explodeAt(a.x, a.y, a.type);
           else killOrShield(p);
           a.active = false;
         }
