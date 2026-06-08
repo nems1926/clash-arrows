@@ -32,6 +32,7 @@ export const DEFAULT_CONFIG = {
   quiverCapacity: 6,      // max flèches au ramassage
   dodgeSpeed: 180,        // px/s   vitesse du dash d'esquive
   dodgeDuration: 3,      // frames durée totale du dash
+  rollDuration: 7,       // frames durée du dodge vers le bas (roulade, plus longue)
   dodgeInvulnFrames: 3,   // frames fenêtre invuln + attrape (sous-ensemble)
   dodgeCooldown: 24,      // frames anti-spam
   selfArmFrames: 10,      // frames délai d'armement de l'auto-touche
