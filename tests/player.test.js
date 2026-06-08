@@ -158,12 +158,44 @@ describe('dodge', () => {
     // dash speed (180) exceeds vMax (90); during the dodge vx must stay > vMax
     expect(Math.abs(p.vx)).toBeGreaterThan(c.vMax);
   });
+  it('a downward dodge rolls: longer, full-speed and horizontal', () => {
+    const c = cfg();
+    // pure down rolls in the facing direction (here default facing = 1)
+    const down = createPlayer(15, 5, c);
+    updatePlayer(down, full({ dodgePressed: true, down: true }), c, grid, DT);
+    expect(down.dodgeTime).toBe(c.rollDuration);
+    expect(down.vx).toBe(c.dodgeSpeed);   // full horizontal speed, not split
+    expect(down.vy).toBe(0);              // hugs the ground, no downward dive
+    // down-diagonal rolls in the held horizontal direction at full speed
+    const diag = createPlayer(15, 5, c);
+    updatePlayer(diag, full({ dodgePressed: true, down: true, moveX: 1 }), c, grid, DT);
+    expect(diag.dodgeTime).toBe(c.rollDuration);
+    expect(diag.vx).toBe(c.dodgeSpeed);
+    expect(diag.vy).toBe(0);
+    // a plain horizontal dash keeps the shorter dash duration
+    const flat = createPlayer(15, 5, c);
+    updatePlayer(flat, full({ dodgePressed: true, moveX: 1 }), c, grid, DT);
+    expect(flat.dodgeTime).toBe(c.dodgeDuration);
+    expect(c.rollDuration).toBeGreaterThan(c.dodgeDuration);
+  });
+  it('holding the dash direction does not snap away residual momentum', () => {
+    const c = cfg();
+    const p = createPlayer(15, 5, c);
+    // dash right, then keep holding right through the end of the dodge
+    updatePlayer(p, full({ dodgePressed: true, moveX: 1 }), c, grid, DT);
+    for (let i = 0; i < c.dodgeDuration; i++) updatePlayer(p, full({ moveX: 1 }), c, grid, DT);
+    // dodge has ended but momentum must bleed off via decel, not clamp to vMax
+    expect(p.dodgeTime).toBe(0);
+    expect(p.vx).toBeGreaterThan(c.vMax);
+  });
 });
 
 describe('player aim & quiver', () => {
   it('starts with a full quiver and faces right', () => {
     const p = createPlayer(10, 0, cfg());
-    expect(p.quiver).toBe(DEFAULT_CONFIG.quiverStart);
+    expect(p.quiver).toHaveLength(DEFAULT_CONFIG.quiverStart);
+    expect(p.quiver.every((t) => t === 'normal')).toBe(true);
+    expect(p.shield).toBe(false);
     expect(p.facing).toBe(1);
   });
   it('updates aimDir from the held direction', () => {

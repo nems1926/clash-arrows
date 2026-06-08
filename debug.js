@@ -11,9 +11,10 @@ const PARAMS = [
   // --- Combat (J1) tuning params ---
   ['arrowSpeed', 0, 500], ['arrowGravity', 0, 600], ['arrowStraightDist', 0, 320],
   ['quiverStart', 0, 10],
-  ['dodgeSpeed', 0, 400], ['dodgeDuration', 0, 40], ['dodgeInvulnFrames', 0, 40],
+  ['dodgeSpeed', 0, 400], ['dodgeDuration', 0, 40], ['rollDuration', 0, 40], ['dodgeInvulnFrames', 0, 40],
   ['dodgeCooldown', 0, 60], ['selfArmFrames', 0, 60], ['stompBounceVy', -300, 0],
   ['roundsToWin', 1, 15],
+  ['explosionRadius', 0, 80], ['pickupRespawnFrames', 0, 1200], ['quiverCapacity', 1, 12],
 ];
 
 export function createDebug(cfg) {
@@ -32,7 +33,7 @@ export function createDebug(cfg) {
     const slider = document.createElement('input');
     slider.type = 'range';
     slider.min = min; slider.max = max;
-    const isInt = key.endsWith('Frames') || ['quiverStart', 'dodgeDuration', 'dodgeCooldown', 'roundsToWin'].includes(key);
+    const isInt = key.endsWith('Frames') || ['quiverStart', 'dodgeDuration', 'rollDuration', 'dodgeCooldown', 'roundsToWin', 'quiverCapacity', 'pickupRespawnFrames'].includes(key);
     slider.step = isInt ? 1 : (max - min) / 200;
     slider.value = cfg[key];
     const val = document.createElement('span');
@@ -93,7 +94,7 @@ export function drawDebug(dbg, player) {
     `v: (${player.vx.toFixed(0)}, ${player.vy.toFixed(0)})`,
     `sol:${player.grounded ? '✔' : '✘'} mur:${player.wallDir}`,
     `coyote:${Math.max(0, player.coyote)} buf:${Math.max(0, player.buffer)}`,
-    `carquois:${player.quiver} invuln:${Math.max(0, player.invulnTime)}`,
+    `carquois:${player.quiver.length} invuln:${Math.max(0, player.invulnTime)}`,
     `dodgeCd:${Math.max(0, player.dodgeCooldownTimer)}`,
   ];
   lines.forEach((l, i) => text(l, 6, 6 + i * 16));

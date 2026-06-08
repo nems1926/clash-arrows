@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wrap, cellAt, isSolidAt, arrowBoxHitsTile, SOLID, ONEWAY } from '../tilemap.js';
+import { wrap, cellAt, isSolidAt, arrowBoxHitsTile, resolveX, resolveY, wallContact, SOLID, ONEWAY, DESTRUCT } from '../tilemap.js';
 
 const grid = [
   [0, 1, 0],
@@ -25,8 +25,6 @@ describe('isSolidAt', () => {
     expect(isSolidAt(grid, 0, 1)).toBe(false); // oneway is not "solid"
   });
 });
-
-import { resolveX, resolveY, wallContact } from '../tilemap.js';
 
 // 4 cols × 3 rows; a solid wall in column 2.
 const wallGrid = [
@@ -85,8 +83,6 @@ describe('resolveY (solids)', () => {
   });
 });
 
-import { ONEWAY } from '../tilemap.js';
-
 // one-way platform along the bottom row
 const owGrid = [
   [0, 0, 0],
@@ -144,5 +140,34 @@ describe('arrowBoxHitsTile', () => {
   });
   it('reads through the toroidal seam (modulo lookup)', () => {
     expect(arrowBoxHitsTile(grid, 15 + 30, 15, 6, 2, 10)).toBe(true); // wraps to col1
+  });
+});
+
+describe('destructible tiles block like solids', () => {
+  // a single destructible tile at col1,row1 of a 3x3 grid (10px tiles)
+  const grid = [
+    [0, 0, 0],
+    [0, 3, 0],
+    [0, 0, 0],
+  ];
+  it('DESTRUCT is the value 3', () => {
+    expect(DESTRUCT).toBe(3);
+  });
+  it('blocks rightward movement (resolveX stops at it)', () => {
+    // 8x8 box at (2,12) moving right 4px into col1 (a <1-tile step)
+    const r = resolveX(grid, 2, 12, 8, 8, 4, 10);
+    expect(r.hit).toBe(true);
+    expect(r.x).toBeLessThanOrEqual(10 - 8 + 0.001); // snapped left of the tile
+  });
+  it('blocks downward movement (resolveY lands on it)', () => {
+    // 8x8 box at (11,0) moving down 4px onto the col1,row1 destructible
+    const r = resolveY(grid, 11, 0, 8, 8, 4, 10, false, 8);
+    expect(r.grounded).toBe(true);
+  });
+  it('wallContact detects it', () => {
+    expect(wallContact(grid, 10, 12, 8, 8, 10)).not.toBe(0);
+  });
+  it('arrows stick to it', () => {
+    expect(arrowBoxHitsTile(grid, 12, 12, 6, 2, 10)).toBe(true);
   });
 });

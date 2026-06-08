@@ -29,13 +29,17 @@ export const DEFAULT_CONFIG = {
   arrowGravity: 450,      // px/s²  arc balistique (< gravité joueur)
   arrowStraightDist: 50, // px  vol tendu (sans gravité) avant que la gravité s'applique (~1/3 d'écran)
   quiverStart: 3,         // flèches de départ
+  quiverCapacity: 6,      // max flèches au ramassage
   dodgeSpeed: 180,        // px/s   vitesse du dash d'esquive
   dodgeDuration: 3,      // frames durée totale du dash
+  rollDuration: 7,       // frames durée du dodge vers le bas (roulade, plus longue)
   dodgeInvulnFrames: 3,   // frames fenêtre invuln + attrape (sous-ensemble)
   dodgeCooldown: 24,      // frames anti-spam
   selfArmFrames: 10,      // frames délai d'armement de l'auto-touche
   stompBounceVy: -120,    // px/s   rebond vertical du stompeur
+  explosionRadius: 24,    // px     rayon de l'explosion de bombe
   roundsToWin: 5,         // manches pour gagner le match
+  pickupRespawnFrames: 360, // ~6s avant réapparition d'un pickup
   // mirror the geometry so updatePlayer needs only cfg
   TILE, W, H, PLAYER_W, PLAYER_H,
 };

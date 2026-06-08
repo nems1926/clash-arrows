@@ -1,5 +1,7 @@
 import { W, H, SCALE } from './config.js';
 import { PLAYER_COLORS } from './render.js';
+import { arrowCount, nextType } from './quiver.js';
+import { ARROW_TYPES } from './arrow.js';
 
 // Per-player HUD: arrow count + rounds won, drawn in each player's color.
 // Text is in scaled-canvas pixel coords (same pattern as drawDebug).
@@ -13,7 +15,11 @@ export function drawHud(players) {
     fill(PLAYER_COLORS[i % PLAYER_COLORS.length]);
     const x = 6 + i * 80;
     text(`P${i + 1}`, x, 6);
-    text(`arr:${p.quiver}`, x, 22);
+    if (p.shield) text('[O]', x + 40, 6);
+    const nt = nextType(p);
+    fill(nt ? ARROW_TYPES[nt].color : '#555');
+    text(`arr:${arrowCount(p)}`, x, 22);
+    fill(PLAYER_COLORS[i % PLAYER_COLORS.length]);
     text(`win:${p.roundsWon}`, x, 38);
   });
   pop();

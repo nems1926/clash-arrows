@@ -17,7 +17,8 @@ export function createPlayer(x, y, cfg) {
     facing: 1,
     prevBottom: y + cfg.PLAYER_H,
     state: 'AIRBORNE',
-    quiver: cfg.quiverStart,
+    quiver: Array(cfg.quiverStart).fill('normal'),
+    shield: false,
     aimDir: { x: 1, y: 0 },
     index: 0,
     roundsWon: 0,
@@ -35,20 +36,38 @@ export function updatePlayer(p, intent, cfg, grid, dt) {
   p.invulnTime = Math.max(0, p.invulnTime - 1);
   p.dodgeCooldownTimer = Math.max(0, p.dodgeCooldownTimer - 1);
   if (intent.dodgePressed && p.dodgeCooldownTimer === 0 && p.dodgeTime === 0) {
-    p.dodgeTime = cfg.dodgeDuration;
+    const dir = aimVector({ moveX: intent.moveX, up: intent.up, down: intent.down }, p.facing);
     p.invulnTime = cfg.dodgeInvulnFrames;
     p.dodgeCooldownTimer = cfg.dodgeCooldown;
-    const dir = aimVector({ moveX: intent.moveX, up: intent.up, down: intent.down }, p.facing);
-    p.vx = dir.x * cfg.dodgeSpeed;
-    p.vy = dir.y * cfg.dodgeSpeed;
+    if (dir.y > 0) {
+      // downward input (down or down-diagonal) is a roll: a longer, full-speed
+      // horizontal dash that hugs the ground — not a downward dive.
+      const rollDir = intent.moveX !== 0 ? intent.moveX : p.facing;
+      p.dodgeTime = cfg.rollDuration;
+      p.vx = rollDir * cfg.dodgeSpeed;
+      p.vy = 0;
+      p.facing = rollDir;
+    } else {
+      p.dodgeTime = cfg.dodgeDuration;
+      p.vx = dir.x * cfg.dodgeSpeed;
+      p.vy = dir.y * cfg.dodgeSpeed;
+    }
   }
   const dodging = p.dodgeTime > 0;
 
   // 2. horizontal accel / decel
   if (!dodging) {
   if (intent.moveX !== 0) {
-    p.vx = clamp(p.vx + intent.moveX * cfg.accel * dt, -cfg.vMax, cfg.vMax);
     p.facing = intent.moveX;
+    // preserve dash momentum: if already faster than vMax in the held
+    // direction, bleed off with decel instead of snapping to vMax — so
+    // holding the stick no longer cuts the dash short.
+    if (sign(p.vx) === intent.moveX && Math.abs(p.vx) > cfg.vMax) {
+      const drop = cfg.decel * dt;
+      p.vx = Math.max(cfg.vMax, Math.abs(p.vx) - drop) * intent.moveX;
+    } else {
+      p.vx = clamp(p.vx + intent.moveX * cfg.accel * dt, -cfg.vMax, cfg.vMax);
+    }
   } else {
     const drop = cfg.decel * dt;
     p.vx = Math.abs(p.vx) <= drop ? 0 : p.vx - sign(p.vx) * drop;
