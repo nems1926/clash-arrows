@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createArrow, spawnArrow, updateArrow, createPool, acquire, release, ARROW_TYPES } from '../arrow.js';
+import { createArrow, spawnArrow, updateArrow, createPool, acquire, release, ARROW_TYPES, splitDirections } from '../arrow.js';
 import { arrowBoxHitsTile, SOLID, ONEWAY, DESTRUCT } from '../tilemap.js';
 import { DEFAULT_CONFIG } from '../config.js';
 
@@ -188,5 +188,23 @@ describe('laser arrow bounces then plants', () => {
     for (let i = 0; i < 600 && laser.state === 'IN_FLIGHT'; i++) updateArrow(laser, c, grid, DT);
     expect(laser.state).toBe('STUCK');
     expect(laser.bounces).toBe(0);
+  });
+});
+
+describe('splitDirections (bolt fan)', () => {
+  it('returns count unit vectors fanned around the base direction', () => {
+    const dirs = splitDirections(1, 0, 3, Math.PI / 6);
+    expect(dirs).toHaveLength(3);
+    expect(dirs[1].x).toBeCloseTo(1, 5);
+    expect(dirs[1].y).toBeCloseTo(0, 5);
+    expect(dirs[0].y).toBeCloseTo(Math.sin(-Math.PI / 6), 5);
+    expect(dirs[2].y).toBeCloseTo(Math.sin(Math.PI / 6), 5);
+    for (const d of dirs) expect(Math.hypot(d.x, d.y)).toBeCloseTo(1, 5);
+  });
+  it('a single fragment points along the base direction', () => {
+    const dirs = splitDirections(0, 1, 1, Math.PI / 6);
+    expect(dirs).toHaveLength(1);
+    expect(dirs[0].x).toBeCloseTo(0, 5);
+    expect(dirs[0].y).toBeCloseTo(1, 5);
   });
 });

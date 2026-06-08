@@ -48,6 +48,19 @@ export function spawnArrow(a, x, y, dx, dy, owner, cfg, type = 'normal') {
   return a;
 }
 
+// `count` unit directions fanned within ±spread radians around (dirX,dirY).
+// Used by the bolt arrow to scatter fragments on impact.
+export function splitDirections(dirX, dirY, count, spread) {
+  const base = Math.atan2(dirY, dirX);
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const t = count === 1 ? 0 : (i / (count - 1)) * 2 - 1; // -1..1
+    const ang = base + t * spread;
+    out.push({ x: Math.cos(ang), y: Math.sin(ang) });
+  }
+  return out;
+}
+
 export function updateArrow(a, cfg, grid, dt) {
   if (!a.active || a.state !== 'IN_FLIGHT') return a;
   a.ageFrames++;
