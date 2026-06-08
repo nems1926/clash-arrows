@@ -1,4 +1,4 @@
-import { arrowBoxHitsTile, wrap } from './tilemap.js';
+import { arrowBoxStops, wrap } from './tilemap.js';
 
 // Pluggable arrow types. Declarative fields drive behavior:
 //  explosive  → terrain impact yields EXPLODE
@@ -69,8 +69,9 @@ export function updateArrow(a, cfg, grid, dt) {
   for (let i = 0; i < steps; i++) {
     const nx = wrap(a.x + sx, cfg.W);
     const ny = wrap(a.y + sy, cfg.H);
-    if (arrowBoxHitsTile(grid, nx, ny, a.w, a.h, cfg.TILE)) {
-      a.state = ARROW_TYPES[a.type]?.explosive ? 'EXPLODE' : 'STUCK';
+    if (arrowBoxStops(grid, nx, ny, a.w, a.h, cfg.TILE, a.type)) {
+      const def = ARROW_TYPES[a.type] || {};
+      a.state = def.explosive ? 'EXPLODE' : (def.splitCount ? 'SPLIT' : 'STUCK');
       a.vx = 0; a.vy = 0;
       return a; // rest at the last clear position (a.x, a.y)
     }

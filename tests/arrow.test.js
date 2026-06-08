@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createArrow, spawnArrow, updateArrow, createPool, acquire, release, ARROW_TYPES } from '../arrow.js';
-import { arrowBoxHitsTile } from '../tilemap.js';
+import { arrowBoxHitsTile, SOLID, ONEWAY, DESTRUCT } from '../tilemap.js';
 import { DEFAULT_CONFIG } from '../config.js';
 
 const DT = 1 / 60;
@@ -143,5 +143,22 @@ describe('arrow type table & typed spawn (J3)', () => {
     a.traveled = c.arrowStraightDist + 10;     // past gravity onset
     updateArrow(a, c, emptyGrid, DT);
     expect(a.vy).toBe(0);                       // still no gravity
+  });
+});
+
+describe('drill arrow pierces thin tiles, stops on solid', () => {
+  it('passes one-way and destructible, plants on the first solid', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    grid[5][12] = ONEWAY;   // x 120..130, drill passes
+    grid[5][15] = DESTRUCT; // x 150..160, drill passes
+    // Solid wall at col 18 (x 180..190): fill multiple rows so the
+    // ballistic arc of the drill (which drifts downward) hits it regardless of row
+    for (let row = 5; row <= 9; row++) grid[row][18] = SOLID;
+    const drill = createArrow();
+    spawnArrow(drill, 100, 55, 1, 0, 0, c, 'drill'); // row5
+    for (let i = 0; i < 80 && drill.state === 'IN_FLIGHT'; i++) updateArrow(drill, c, grid, DT);
+    expect(drill.state).toBe('STUCK');
+    expect(drill.x).toBeGreaterThan(160); // got past the one-way and destructible
   });
 });
