@@ -2,6 +2,7 @@ export const EMPTY = 0;
 export const SOLID = 1;
 export const ONEWAY = 2;
 export const DESTRUCT = 3;
+export const SPIKE = 4;
 
 export function wrap(value, max) {
   return ((value % max) + max) % max;
@@ -110,6 +111,30 @@ export function wallContact(grid, x, y, w, h, TILE) {
   if (right) return 1;
   if (left) return -1;
   return 0;
+}
+
+// Which tile kinds stop/deflect an arrow of this type when its AABB overlaps one.
+// SPIKE never stops arrows (they fly over it). drill: solid only.
+// laser: solid|destruct (one-way is pass-through). others: solid|oneway|destruct.
+export function cellStopsArrow(cell, type) {
+  if (cell === EMPTY || cell === SPIKE) return false;
+  if (type === 'drill') return cell === SOLID;
+  if (type === 'laser') return cell === SOLID || cell === DESTRUCT;
+  return cell === SOLID || cell === ONEWAY || cell === DESTRUCT;
+}
+
+// Does the arrow's AABB (top-left x,y, size w×h) overlap a stopping tile for `type`?
+export function arrowBoxStops(grid, x, y, w, h, TILE, type) {
+  const c0 = Math.floor(x / TILE);
+  const c1 = Math.floor((x + w - 0.001) / TILE);
+  const r0 = Math.floor(y / TILE);
+  const r1 = Math.floor((y + h - 0.001) / TILE);
+  for (let r = r0; r <= r1; r++) {
+    for (let c = c0; c <= c1; c++) {
+      if (cellStopsArrow(cellAt(grid, c, r), type)) return true;
+    }
+  }
+  return false;
 }
 
 // Arrows stick to any non-empty tile (solid OR one-way). Tests the arrow's full

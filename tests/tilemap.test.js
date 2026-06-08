@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wrap, cellAt, isSolidAt, arrowBoxHitsTile, resolveX, resolveY, wallContact, SOLID, ONEWAY, DESTRUCT } from '../tilemap.js';
+import { wrap, cellAt, isSolidAt, arrowBoxHitsTile, resolveX, resolveY, wallContact, SOLID, ONEWAY, DESTRUCT, EMPTY, SPIKE, cellStopsArrow, arrowBoxStops } from '../tilemap.js';
 
 const grid = [
   [0, 1, 0],
@@ -169,5 +169,33 @@ describe('destructible tiles block like solids', () => {
   });
   it('arrows stick to it', () => {
     expect(arrowBoxHitsTile(grid, 12, 12, 6, 2, 10)).toBe(true);
+  });
+});
+
+describe('per-type arrow stop predicate', () => {
+  it('SPIKE is value 4 and stops nothing', () => {
+    expect(SPIKE).toBe(4);
+    expect(cellStopsArrow(SPIKE, 'normal')).toBe(false);
+    expect(cellStopsArrow(EMPTY, 'normal')).toBe(false);
+  });
+  it('normal/bomb stop on solid, one-way and destruct', () => {
+    expect(cellStopsArrow(SOLID, 'normal')).toBe(true);
+    expect(cellStopsArrow(ONEWAY, 'normal')).toBe(true);
+    expect(cellStopsArrow(DESTRUCT, 'bomb')).toBe(true);
+  });
+  it('drill stops only on solid', () => {
+    expect(cellStopsArrow(SOLID, 'drill')).toBe(true);
+    expect(cellStopsArrow(ONEWAY, 'drill')).toBe(false);
+    expect(cellStopsArrow(DESTRUCT, 'drill')).toBe(false);
+  });
+  it('laser stops on solid and destruct, passes one-way', () => {
+    expect(cellStopsArrow(SOLID, 'laser')).toBe(true);
+    expect(cellStopsArrow(DESTRUCT, 'laser')).toBe(true);
+    expect(cellStopsArrow(ONEWAY, 'laser')).toBe(false);
+  });
+  it('arrowBoxStops scans the AABB with the type predicate', () => {
+    const grid = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]; // solid at col1,row1
+    expect(arrowBoxStops(grid, 12, 12, 6, 2, 10, 'normal')).toBe(true);
+    expect(arrowBoxStops(grid, 0, 0, 6, 2, 10, 'normal')).toBe(false);
   });
 });
