@@ -154,3 +154,13 @@ export function arrowBoxHitsTile(grid, x, y, w, h, TILE) {
   }
   return false;
 }
+
+// Given a blocked move from (x,y) to (nx,ny) for an arrow of `type`, decide which
+// axes are responsible so the caller can reflect velocity. Tests each axis in
+// isolation; a corner where neither isolated axis blocks reflects both.
+export function tileHitAxis(grid, x, y, nx, ny, w, h, TILE, type) {
+  const xBlocked = arrowBoxStops(grid, nx, y, w, h, TILE, type);
+  const yBlocked = arrowBoxStops(grid, x, ny, w, h, TILE, type);
+  if (!xBlocked && !yBlocked) return { x: true, y: true };
+  return { x: xBlocked, y: yBlocked };
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { wrap, cellAt, isSolidAt, arrowBoxHitsTile, resolveX, resolveY, wallContact, SOLID, ONEWAY, DESTRUCT, EMPTY, SPIKE, cellStopsArrow, arrowBoxStops } from '../tilemap.js';
+import { wrap, cellAt, isSolidAt, arrowBoxHitsTile, resolveX, resolveY, wallContact, SOLID, ONEWAY, DESTRUCT, EMPTY, SPIKE, cellStopsArrow, arrowBoxStops, tileHitAxis } from '../tilemap.js';
 
 const grid = [
   [0, 1, 0],
@@ -197,5 +197,18 @@ describe('per-type arrow stop predicate', () => {
     const grid = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]; // solid at col1,row1
     expect(arrowBoxStops(grid, 12, 12, 6, 2, 10, 'normal')).toBe(true);
     expect(arrowBoxStops(grid, 0, 0, 6, 2, 10, 'normal')).toBe(false);
+  });
+});
+
+describe('tileHitAxis (laser reflection)', () => {
+  const grid = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]; // solid at col1,row1 (10..20)
+  it('pure horizontal hit reflects X only', () => {
+    expect(tileHitAxis(grid, 2, 12, 8, 12, 8, 8, 10, 'normal')).toEqual({ x: true, y: false });
+  });
+  it('pure vertical hit reflects Y only', () => {
+    expect(tileHitAxis(grid, 12, 2, 12, 8, 8, 8, 10, 'normal')).toEqual({ x: false, y: true });
+  });
+  it('diagonal corner reflects both', () => {
+    expect(tileHitAxis(grid, 2, 2, 8, 8, 8, 8, 10, 'normal')).toEqual({ x: true, y: true });
   });
 });
