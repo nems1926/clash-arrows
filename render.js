@@ -108,7 +108,7 @@ export function drawPickup(pickup) {
   translate(-W * SCALE / 2, -H * SCALE / 2);
   scale(SCALE);
   noStroke();
-  fill(pickup.type === 'bomb' ? ARROW_TYPES.bomb.color : COL.shield);
+  fill(pickup.type === 'shield' ? COL.shield : (ARROW_TYPES[pickup.type]?.color || COL.shield));
   rect(pickup.x, pickup.y, pickup.w, pickup.h);
   pop();
 }
