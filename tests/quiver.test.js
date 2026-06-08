@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canShoot, shootType, addArrow, fillWith, nextType, arrowCount } from '../quiver.js';
+import { canShoot, shootType, addArrow, addArrows, fillWith, nextType, arrowCount } from '../quiver.js';
 
 describe('typed quiver (stack)', () => {
   it('canShoot reflects the stack', () => {
@@ -28,5 +28,12 @@ describe('typed quiver (stack)', () => {
     expect(nextType({ quiver: ['normal', 'bomb'] })).toBe('bomb');
     expect(nextType({ quiver: [] })).toBe(null);
     expect(arrowCount({ quiver: ['a', 'b'] })).toBe(2);
+  });
+  it('addArrows pushes n of a type up to capacity', () => {
+    const p = { quiver: ['normal'] };
+    addArrows(p, 'laser', 3, 6);
+    expect(p.quiver).toEqual(['normal', 'laser', 'laser', 'laser']);
+    addArrows(p, 'bomb', 5, 5); // already 4, cap 5 → only 1 fits
+    expect(p.quiver).toEqual(['normal', 'laser', 'laser', 'laser', 'bomb']);
   });
 });
