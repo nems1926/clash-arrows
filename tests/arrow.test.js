@@ -208,3 +208,15 @@ describe('splitDirections (bolt fan)', () => {
     expect(dirs[0].y).toBeCloseTo(1, 5);
   });
 });
+
+describe('bolt arrow splits on impact', () => {
+  it('reaches SPLIT state on terrain impact', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    for (let r = 0; r < 18; r++) grid[r][20] = SOLID;
+    const bolt = createArrow();
+    spawnArrow(bolt, 100, 55, 1, 0, 0, c, 'bolt');
+    for (let i = 0; i < 40 && bolt.state === 'IN_FLIGHT'; i++) updateArrow(bolt, c, grid, DT);
+    expect(bolt.state).toBe('SPLIT');
+  });
+});

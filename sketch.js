@@ -5,7 +5,7 @@ import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeInte
 import { drawWorld, drawArrows, drawExplosions, drawPickup } from './render.js';
 import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
-import { createPool, acquire, spawnArrow, updateArrow, release } from './arrow.js';
+import { createPool, acquire, spawnArrow, updateArrow, release, ARROW_TYPES, splitDirections } from './arrow.js';
 import { EMPTY } from './tilemap.js';
 import { canShoot, shootType, addArrow, fillWith } from './quiver.js';
 import { createPickup, chooseSpawn, randomType } from './pickup.js';
@@ -160,9 +160,18 @@ if (!navigator.gpu) {
     }
     for (const a of arrowPool) updateArrow(a, cfg, grid, FIXED);
 
-    // terrain-triggered bomb explosions
+    // terrain-triggered effects: bomb/superbomb explode, bolt splits into fragments
     for (const a of arrowPool) {
-      if (a.active && a.state === 'EXPLODE') { explodeAt(a.x, a.y); a.active = false; }
+      if (!a.active) continue;
+      if (a.state === 'EXPLODE') { explodeAt(a.x, a.y, a.type); a.active = false; }
+      else if (a.state === 'SPLIT') {
+        const dirs = splitDirections(a.dirX, a.dirY, ARROW_TYPES[a.type].splitCount, Math.PI / 6);
+        for (const d of dirs) {
+          const frag = acquire(arrowPool);
+          if (frag) spawnArrow(frag, a.x, a.y, d.x, d.y, a.owner, cfg, 'normal');
+        }
+        a.active = false;
+      }
     }
 
     // arrow -> player resolution: pickup / catch / death
