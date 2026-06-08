@@ -7,7 +7,7 @@ import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow, release, ARROW_TYPES, splitDirections } from './arrow.js';
 import { EMPTY } from './tilemap.js';
-import { canShoot, shootType, addArrow, fillWith } from './quiver.js';
+import { canShoot, shootType, addArrow, addArrows } from './quiver.js';
 import { createPickup, chooseSpawn, randomType } from './pickup.js';
 import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
@@ -83,8 +83,8 @@ if (!navigator.gpu) {
     for (const p of players) {
       if (p.state === 'DEAD') continue;
       if (!toroidalOverlap({ x: p.x, y: p.y, w: p.w, h: p.h }, pickup, cfg.W, cfg.H)) continue;
-      if (pickup.type === 'bomb') fillWith(p, 'bomb', cfg.quiverCapacity);
-      else p.shield = true;
+      if (pickup.type === 'shield') p.shield = true;
+      else addArrows(p, pickup.type, cfg.pickupArrowCount, cfg.quiverCapacity);
       pickup.active = false;
       pickupTimer = cfg.pickupRespawnFrames;
       break;
