@@ -162,3 +162,31 @@ describe('drill arrow pierces thin tiles, stops on solid', () => {
     expect(drill.x).toBeGreaterThan(160); // got past the one-way and destructible
   });
 });
+
+describe('laser arrow bounces then plants', () => {
+  it('reflects velocity on a wall and decrements bounces', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    for (let r = 0; r < 18; r++) grid[r][20] = SOLID; // vertical wall at x 200
+    const laser = createArrow();
+    spawnArrow(laser, 100, 55, 1, 0, 0, c, 'laser');
+    let bounced = false;
+    for (let i = 0; i < 60 && !bounced; i++) {
+      updateArrow(laser, c, grid, DT);
+      if (laser.vx < 0) bounced = true;
+    }
+    expect(bounced).toBe(true);
+    expect(laser.bounces).toBe(2);
+    expect(laser.state).toBe('IN_FLIGHT');
+  });
+  it('plants (STUCK) after exhausting its bounces', () => {
+    const c = cfg();
+    const grid = emptyGrid.map((r) => r.slice());
+    for (let r = 0; r < 18; r++) { grid[r][10] = SOLID; grid[r][20] = SOLID; } // corridor
+    const laser = createArrow();
+    spawnArrow(laser, 150, 55, 1, 0, 0, c, 'laser');
+    for (let i = 0; i < 600 && laser.state === 'IN_FLIGHT'; i++) updateArrow(laser, c, grid, DT);
+    expect(laser.state).toBe('STUCK');
+    expect(laser.bounces).toBe(0);
+  });
+});
