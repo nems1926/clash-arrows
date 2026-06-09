@@ -12,6 +12,7 @@ import { createPickup, chooseSpawn, randomType } from './pickup.js';
 import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
 import { createGame, advance } from './game.js';
+import { toggleFullscreen } from './fullscreen.js';
 
 if (!navigator.gpu) {
   document.body.innerHTML =
@@ -22,6 +23,7 @@ if (!navigator.gpu) {
   world.gravity.y = 0;
   pixelDensity(1);
   noSmooth();
+  displayMode(MAXED, PIXELATED); // remplit le parent, letterbox, pixels nets
 
   const cfg = { ...DEFAULT_CONFIG };
   let { grid, spawns, pickupSpawns } = parseArena(ARENA_A);
@@ -212,6 +214,12 @@ if (!navigator.gpu) {
     updatePickups();
   }
 
+  // Plein écran : F ou double-clic. Échap sort (natif navigateur).
+  // Les hooks q5 s'exécutent dans la pile d'un vrai événement DOM, condition
+  // requise par l'API Fullscreen (impossible depuis q5.update / rAF).
+  q5.keyPressed = () => { if (key === 'f' || key === 'F') toggleFullscreen(q5); };
+  q5.doubleClicked = () => toggleFullscreen(q5);
+
   q5.update = function () {
     if (game.state === 'LOBBY') {
       const slots = updateLobby();
@@ -221,6 +229,7 @@ if (!navigator.gpu) {
         'A / START : une manette rejoint',
         `joueurs prets : ${slots.length}`,
         canStart(slots) ? 'ENTREE : demarrer' : 'minimum 2 joueurs',
+        'F ou double-clic : plein ecran',
       ]);
       return;
     }
