@@ -27,6 +27,9 @@ function drawPlayerSprite(p) {
   const destW = destH;         // cellule carrée -> conserve le ratio de la planche
   const cx = p.x + p.w / 2;    // centre X de la hitbox
   const footY = p.y + p.h;     // bas de la hitbox = pieds
+  // q5play force imageMode(CENTER) au boot ; on revient à CORNER pour que (x,y)
+  // soit le coin haut-gauche du sprite (ancrage pieds/centre calculé ci-dessous).
+  imageMode(CORNER);
   for (const dx of [-W, 0, W]) {
     for (const dy of [-H, 0, H]) {
       push();
@@ -95,6 +98,15 @@ export function drawWorld(grid, players) {
         }
       }
     }
+    // DEBUG: contour blanc de la hitbox par-dessus le sprite, pour visualiser
+    // le désalignement hitbox <-> image. À retirer une fois l'ancrage réglé.
+    // stroke(255); strokeWeight(0.5); noFill();
+    //for (const dx of [-W, 0, W]) {
+    //  for (const dy of [-H, 0, H]) {
+    //    rect(player.x + dx, player.y + dy, player.w, player.h);
+    //  }
+    // }
+    //noStroke();
     if (player.shield) {
       stroke(COL.shield); strokeWeight(1); noFill();
       rect(player.x - 1, player.y - 1, player.w + 2, player.h + 2);
