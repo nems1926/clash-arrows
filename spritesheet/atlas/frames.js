@@ -5,18 +5,18 @@ export default {
     "count": 8
   },
   "dodge": {
-    "frameW": 308,
-    "frameH": 379,
+    "frameW": 293,
+    "frameH": 288,
     "count": 8
   },
   "roll": {
     "frameW": 264,
-    "frameH": 353,
+    "frameH": 292,
     "count": 10
   },
   "jump": {
     "frameW": 258,
-    "frameH": 358,
+    "frameH": 299,
     "count": 8
   }
 };

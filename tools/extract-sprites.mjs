@@ -50,6 +50,30 @@ const colOcc = (mask, w, y0, y1) => {
   return occ;
 };
 
+// Occupation par ligne (nb de pixels encre) sur la sous-colonne [x0,x1), lignes [y0,y1).
+// Index 0 = ligne y0. Sert à isoler verticalement le personnage dans une frame.
+const rowOccRange = (mask, w, x0, x1, y0, y1) => {
+  const occ = new Int32Array(y1 - y0);
+  for (let y = y0; y < y1; y++) { let c = 0; for (let x = x0; x < x1; x++) c += mask[y*w+x]; occ[y - y0] = c; }
+  return occ;
+};
+
+// Retourne la première ligne (relative à y0) où l'occupation TOTALE de la rangée
+// (sur toute la largeur) tombe sous 'thresh'. Sert à sauter l'en-tête de section
+// qui s'étend sur toute la largeur avec des milliers de pixels d'encre.
+// Si l'occupation ne descend jamais sous thresh, retourne 0 (pas de recadrage).
+function findHeaderBottom(mask, w, y0, y1, thresh) {
+  // L'en-tête occupe les premières lignes avec un très haut compte total.
+  // On cherche la première ligne où le count tombe SOUS thresh (sortie de l'en-tête).
+  let inHeader = false;
+  for (let y = y0; y < y1; y++) {
+    let c = 0; for (let x = 0; x < w; x++) c += mask[y*w+x];
+    if (c > thresh) inHeader = true;
+    else if (inHeader) return y - y0; // première ligne sous le seuil après l'en-tête
+  }
+  return 0;
+}
+
 // Plages contiguës [start,end) où occ > thresh, fusionnées tant que le trou < minGap.
 function clusters(occ, thresh, minGap) {
   const ranges = []; let start = -1, gap = 0;
@@ -79,13 +103,30 @@ function bbox(mask, w, x0, x1, y0, y1) {
   return found ? { x: minx, y: miny, w: maxx-minx+1, h: maxy-miny+1 } : null;
 }
 
-// Découpe une bande en frames : un trou clairsemé (occ <= thresh) ≥ gap px sépare 2 perso ;
-// on ignore les clusters trop fins (< minW px) qui sont du bruit / étiquettes isolées.
+// Découpe une bande en frames : un trou clairsemé (occ <= colThresh) ≥ colGap px sépare
+// 2 perso ; on ignore les clusters de colonnes trop fins (< minW px) = bruit/étiquettes.
+// Puis on recadre CHAQUE frame verticalement sur le personnage = le cluster de lignes
+// le plus HAUT de sa colonne (élimine l'en-tête de section au-dessus et l'étiquette Fn
+// en dessous, qui sont des clusters courts séparés par du blanc).
 function extractBand(png, mask, band, colThresh, colGap, minW) {
   const [y0, y1] = band;
+  // Détecte la fin de l'en-tête de section (pleine largeur) : premier cluster de lignes
+  // à haute occupation totale, puis on prend la ligne suivante comme charY0.
+  // On utilise l'occupation PLEINE LARGEUR pour identifier l'en-tête, mais on conserve
+  // le colOcc sur la bande complète [y0,y1) pour ne pas perturber le découpage en frames.
+  const headerOff = findHeaderBottom(mask, png.width, y0, y1, 200);
+  const charY0 = headerOff > 0 ? y0 + headerOff : y0;
   return clusters(colOcc(mask, png.width, y0, y1), colThresh, colGap)
     .filter(([a, b]) => b - a > minW)
-    .map(([cx0, cx1]) => bbox(mask, png.width, cx0, cx1, y0, y1))
+    .map(([cx0, cx1]) => {
+      // Rogne aussi l'étiquette Fn en bas (cluster de lignes court, séparé par du blanc).
+      // On cherche dans [charY0, y1) le cluster le plus grand = le personnage.
+      const rows = clusters(rowOccRange(mask, png.width, cx0, cx1, charY0, y1), 0, 8);
+      if (!rows.length) return null;
+      rows.sort((a, b) => (b[1] - b[0]) - (a[1] - a[0])); // plus grand = le personnage
+      const [ry0, ry1] = rows[0];
+      return bbox(mask, png.width, cx0, cx1, charY0 + ry0, charY0 + ry1);
+    })
     .filter(Boolean);
 }
 
