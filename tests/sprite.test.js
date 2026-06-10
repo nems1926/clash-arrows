@@ -43,4 +43,10 @@ describe('spriteFor', () => {
     const left = spriteFor({ ...base, state: 'GROUNDED', vx: 50, facing: -1 }, 0);
     expect(left.flipX).toBe(true);
   });
+  it('idle quand immobile au sol (frame de repos, atlas run)', () => {
+    const s = spriteFor({ ...base, state: 'GROUNDED', vx: 0, facing: 1 }, 0);
+    expect(s.clip).toBe('idle');
+    expect(s.atlas).toBe('run');
+    expect(s.frameIndex).toBe(IDLE_FRAME);
+  });
 });

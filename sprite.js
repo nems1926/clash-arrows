@@ -1,6 +1,6 @@
 // Logique d'animation — module pur (aucune dépendance q5/DOM, testable).
 // Mappe l'état joueur (FSM + vitesse) vers (clip, frame, flip).
-// Portée actuelle : course horizontale uniquement (run32.png, 8 frames).
+// Portée actuelle : course horizontale uniquement (run32.webp, 8 frames).
 // Les états aériens / dodge retombent sur la frame de repos en attendant
 // leurs propres clips.
 
