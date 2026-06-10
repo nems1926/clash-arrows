@@ -1,7 +1,7 @@
 import { SOLID, ONEWAY, DESTRUCT, SPIKE } from './tilemap.js';
 import { W, H, SCALE, TILE } from './config.js';
 import { ARROW_TYPES } from './arrow.js';
-import { spriteFor, CLIPS } from './sprite.js';
+import { spriteFor } from './sprite.js';
 
 const SHEET = 'spritesheet/run32.webp';
 const FRAME = 32; // cellule source carrée 32x32 (8 frames)
