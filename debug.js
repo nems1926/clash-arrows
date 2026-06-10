@@ -67,7 +67,9 @@ export function createDebug(cfg) {
   panel.append(reset, copy);
   document.body.append(panel);
 
-  const dbg = { visible: true, panel };
+  // Panneau fermé par défaut — Tab pour l'ouvrir. / Panel closed by default.
+  panel.style.display = 'none';
+  const dbg = { visible: false, panel };
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -89,7 +91,7 @@ export function drawDebug(dbg, player) {
   fill('#4ade80');
   textFont('monospace');
   textSize(14);
-  textAlign(LEFT, TOP);
+  textAlign(CENTER, TOP);
   const lines = [
     `état: ${player.state}`,
     `v: (${player.vx.toFixed(0)}, ${player.vy.toFixed(0)})`,
@@ -98,6 +100,6 @@ export function drawDebug(dbg, player) {
     `carquois:${player.quiver.length} invuln:${Math.max(0, player.invulnTime)}`,
     `dodgeCd:${Math.max(0, player.dodgeCooldownTimer)}`,
   ];
-  lines.forEach((l, i) => text(l, 6, 6 + i * 16));
+  lines.forEach((l, i) => text(l, W * SCALE / 2, 6 + i * 16));
   pop();
 }

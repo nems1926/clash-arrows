@@ -10,11 +10,11 @@ export const SCALE = 4;
 // All feel values are tunable live via the debug panel.
 // Starting values from PRD §5.1.
 export const DEFAULT_CONFIG = {
-  vMax: 90,            // px/s   run target speed
+  vMax: 80,            // px/s   run target speed
   accel: 540,          // px/s²  ~10 frames to reach vMax
   decel: 540,          // px/s²  ground deceleration on release
   vJump: -160,         // px/s   jump impulse (negative = up)
-  gravity: 600,        // px/s²
+  gravity: 480,        // px/s²
   vFallMax: 240,       // px/s   fall speed cap
   vSlide: 60,          // px/s   wall-slide fall cap
   wallJumpX: 120,      // px/s   horizontal wall-jump impulse
@@ -25,8 +25,8 @@ export const DEFAULT_CONFIG = {
   apexVyThreshold: 40, // px/s   |vy| below this gets reduced gravity
   jumpCutMult: 0.5,    // ascent cut on jump release
   // --- Combat (J1), valeurs de départ PRD §5, calibrables au panneau debug ---
-  arrowSpeed: 190,        // px/s   vitesse initiale de la flèche
-  arrowGravity: 450,      // px/s²  arc balistique (< gravité joueur)
+  arrowSpeed: 220,        // px/s   vitesse initiale de la flèche
+  arrowGravity: 480,      // px/s²  arc balistique (< gravité joueur)
   arrowStraightDist: 50, // px  vol tendu (sans gravité) avant que la gravité s'applique (~1/3 d'écran)
   quiverStart: 3,         // flèches de départ
   quiverCapacity: 6,      // max flèches au ramassage
