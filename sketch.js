@@ -2,7 +2,7 @@ import { DEFAULT_CONFIG, W, H, SCALE } from './config.js';
 import { ARENA_A, parseArena, pickRandomArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeIntent } from './input.js';
-import { drawWorld, drawArrows, drawExplosions, drawPickup } from './render.js';
+import { drawWorld, drawArrows, drawExplosions, drawPickup, loadSprites } from './render.js';
 import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow, release, ARROW_TYPES, splitDirections } from './arrow.js';
@@ -23,6 +23,7 @@ if (!navigator.gpu) {
   world.gravity.y = 0;
   pixelDensity(1);
   noSmooth();
+  loadSprites();
   displayMode(MAXED, PIXELATED); // remplit le parent, letterbox, pixels nets
 
   const cfg = { ...DEFAULT_CONFIG };
