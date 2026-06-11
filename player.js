@@ -19,6 +19,7 @@ export function createPlayer(x, y, cfg) {
     state: 'AIRBORNE',
     quiver: Array(cfg.quiverStart).fill('normal'),
     shield: false,
+    impaled: false,
     aimDir: { x: 1, y: 0 },
     index: 0,
     roundsWon: 0,

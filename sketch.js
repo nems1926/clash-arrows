@@ -113,6 +113,7 @@ if (!navigator.gpu) {
       p.grounded = false;
       p.quiver = Array(cfg.quiverStart).fill('normal');
       p.shield = false;
+      p.impaled = false;
       p.dodgeTime = 0; p.invulnTime = 0; p.dodgeCooldownTimer = 0;
       p.prevBottom = y + p.h;
     }
