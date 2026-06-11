@@ -9,7 +9,7 @@ import { createPool, acquire, spawnArrow, updateArrow, release, ARROW_TYPES, spl
 import { EMPTY } from './tilemap.js';
 import { canShoot, shootType, addArrow, addArrows } from './quiver.js';
 import { createPickup, chooseSpawn, randomType } from './pickup.js';
-import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap } from './combat.js';
+import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap, impale, carryFollow } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
 import { createGame, advance } from './game.js';
 import { toggleFullscreen } from './fullscreen.js';
@@ -164,6 +164,10 @@ if (!navigator.gpu) {
       p.prevKeys = keys;
     }
     for (const a of arrowPool) updateArrow(a, cfg, grid, FIXED);
+    // les corps embrochés suivent leur flèche tant qu'elle vole, puis restent figés
+    for (const a of arrowPool) {
+      if (a.active && a.carryIds.length > 0) carryFollow(a, players);
+    }
 
     // terrain-triggered effects: bomb/superbomb explode, bolt splits into fragments
     for (const a of arrowPool) {
@@ -191,9 +195,16 @@ if (!navigator.gpu) {
         if (a.state === 'STUCK') { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (canCatch(p)) { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (arrowLethal(a, p.index, cfg)) {
-          if (ARROW_TYPES[a.type]?.explosive) explodeAt(a.x, a.y, a.type);
-          else killOrShield(p);
-          a.active = false;
+          if (ARROW_TYPES[a.type]?.explosive) {
+            explodeAt(a.x, a.y, a.type);
+            a.active = false;
+          } else if (killOrShield(p)) {
+            // mort confirmée (pas de bouclier) → embrochage + accélération, la flèche continue
+            impale(a, p, cfg);
+          } else {
+            // bouclier absorbé → la flèche est consommée comme avant
+            a.active = false;
+          }
         }
       }
     }
