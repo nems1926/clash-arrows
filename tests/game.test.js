@@ -24,4 +24,18 @@ describe('game state machine', () => {
     advance(game, [], { roundsToWin: 5 });
     expect(game.state).toBe('RESPAWN');
   });
+  it('ne termine pas le round tant que holdRound est vrai', () => {
+    const game = createGame();
+    game.state = 'PLAYING';
+    const players = [
+      { index: 0, state: 'AIRBORNE', roundsWon: 0 },
+      { index: 1, state: 'DEAD', roundsWon: 0 },
+    ];
+    // un seul vivant → roundOver serait vrai, mais une flèche porte encore un corps
+    advance(game, players, { roundsToWin: 3 }, true);
+    expect(game.state).toBe('PLAYING');
+    // la flèche s'est plantée → holdRound repasse faux, le round se termine
+    advance(game, players, { roundsToWin: 3 }, false);
+    expect(game.state).toBe('ROUND_END');
+  });
 });
