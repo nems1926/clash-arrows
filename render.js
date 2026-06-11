@@ -85,9 +85,20 @@ export function drawWorld(grid, players) {
     }
   }
 
-  // players + ghosts (skip the dead)
+  // players + ghosts. On saute les morts SAUF les corps embrochés, dessinés comme
+  // cadavres inertes (gris) à leur position (suivie/épinglée par la flèche).
   for (const player of players) {
-    if (player.state === 'DEAD') continue;
+    if (player.state === 'DEAD') {
+      if (player.impaled) {
+        fill('#6b7280'); // gris cadavre
+        for (const dx of [-W, 0, W]) {
+          for (const dy of [-H, 0, H]) {
+            rect(player.x + dx, player.y + dy, player.w, player.h);
+          }
+        }
+      }
+      continue;
+    }
     if (spritesReady()) {
       drawPlayerSprite(player);
     } else {
