@@ -266,7 +266,10 @@ if (!navigator.gpu) {
     while (acc >= FIXED) {
       if (game.state === 'PLAYING') {
         stepPlaying();
-        advance(game, players, cfg);
+        // tant qu'une flèche porte un corps, on diffère la fin de round pour que
+        // le transport jusqu'au mur soit visible (notamment en duel)
+        const anyCarrying = arrowPool.some((a) => a.active && a.carryIds.length > 0);
+        advance(game, players, cfg, anyCarrying);
       } else if (game.state === 'ROUND_END') {
         advance(game, players, cfg);
         if (game.state === 'RESPAWN') { respawnAll(); game.state = 'PLAYING'; }
