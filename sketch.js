@@ -268,7 +268,7 @@ if (!navigator.gpu) {
         stepPlaying();
         // tant qu'une flèche porte un corps, on diffère la fin de round pour que
         // le transport jusqu'au mur soit visible (notamment en duel)
-        const anyCarrying = arrowPool.some((a) => a.active && a.carryIds.length > 0);
+        const anyCarrying = arrowPool.some((a) => a.active && a.state === 'IN_FLIGHT' && a.carryIds.length > 0);
         advance(game, players, cfg, anyCarrying);
       } else if (game.state === 'ROUND_END') {
         advance(game, players, cfg);
