@@ -164,7 +164,10 @@ if (!navigator.gpu) {
       p.prevKeys = keys;
     }
     for (const a of arrowPool) updateArrow(a, cfg, grid, FIXED);
-    // les corps embrochés suivent leur flèche tant qu'elle vole, puis restent figés
+    // Les corps embrochés suivent leur flèche tant qu'elle vole, puis restent
+    // épinglés au point d'impact : on garde donc volontairement la condition sans
+    // `IN_FLIGHT` (contrairement au différé de fin de round) pour continuer à
+    // recaler le corps sur la flèche plantée (STUCK).
     for (const a of arrowPool) {
       if (a.active && a.carryIds.length > 0) carryFollow(a, players);
     }
