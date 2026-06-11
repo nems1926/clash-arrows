@@ -2,14 +2,14 @@ import { DEFAULT_CONFIG, W, H, SCALE } from './config.js';
 import { ARENA_A, parseArena, pickRandomArena } from './arena.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { readKeys, readGamepad, getGamepad, connectedGamepadIndices, computeIntent } from './input.js';
-import { drawWorld, drawArrows, drawExplosions, drawPickup } from './render.js';
+import { drawWorld, drawArrows, drawExplosions, drawPickup, loadSprites } from './render.js';
 import { drawHud } from './hud.js';
 import { createDebug, drawDebug } from './debug.js';
 import { createPool, acquire, spawnArrow, updateArrow, release, ARROW_TYPES, splitDirections } from './arrow.js';
 import { EMPTY } from './tilemap.js';
 import { canShoot, shootType, addArrow, addArrows } from './quiver.js';
 import { createPickup, chooseSpawn, randomType } from './pickup.js';
-import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap } from './combat.js';
+import { toroidalOverlap, canCatch, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap, impale, carryFollow } from './combat.js';
 import { resolveSlots, canStart } from './lobby.js';
 import { createGame, advance } from './game.js';
 import { toggleFullscreen } from './fullscreen.js';
@@ -23,6 +23,7 @@ if (!navigator.gpu) {
   world.gravity.y = 0;
   pixelDensity(1);
   noSmooth();
+  loadSprites();
   displayMode(MAXED, PIXELATED); // remplit le parent, letterbox, pixels nets
 
   const cfg = { ...DEFAULT_CONFIG };
@@ -112,6 +113,7 @@ if (!navigator.gpu) {
       p.grounded = false;
       p.quiver = Array(cfg.quiverStart).fill('normal');
       p.shield = false;
+      p.impaled = false;
       p.dodgeTime = 0; p.invulnTime = 0; p.dodgeCooldownTimer = 0;
       p.prevBottom = y + p.h;
     }
@@ -162,6 +164,13 @@ if (!navigator.gpu) {
       p.prevKeys = keys;
     }
     for (const a of arrowPool) updateArrow(a, cfg, grid, FIXED);
+    // Les corps embrochés suivent leur flèche tant qu'elle vole, puis restent
+    // épinglés au point d'impact : on garde donc volontairement la condition sans
+    // `IN_FLIGHT` (contrairement au différé de fin de round) pour continuer à
+    // recaler le corps sur la flèche plantée (STUCK).
+    for (const a of arrowPool) {
+      if (a.active && a.carryIds.length > 0) carryFollow(a, players);
+    }
 
     // terrain-triggered effects: bomb/superbomb explode, bolt splits into fragments
     for (const a of arrowPool) {
@@ -189,9 +198,16 @@ if (!navigator.gpu) {
         if (a.state === 'STUCK') { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (canCatch(p)) { addArrow(p, a.type, cfg.quiverCapacity); a.active = false; }
         else if (arrowLethal(a, p.index, cfg)) {
-          if (ARROW_TYPES[a.type]?.explosive) explodeAt(a.x, a.y, a.type);
-          else killOrShield(p);
-          a.active = false;
+          if (ARROW_TYPES[a.type]?.explosive) {
+            explodeAt(a.x, a.y, a.type);
+            a.active = false;
+          } else if (killOrShield(p)) {
+            // mort confirmée (pas de bouclier) → embrochage + accélération, la flèche continue
+            impale(a, p, cfg);
+          } else {
+            // bouclier absorbé → la flèche est consommée comme avant
+            a.active = false;
+          }
         }
       }
     }
@@ -253,7 +269,10 @@ if (!navigator.gpu) {
     while (acc >= FIXED) {
       if (game.state === 'PLAYING') {
         stepPlaying();
-        advance(game, players, cfg);
+        // tant qu'une flèche porte un corps, on diffère la fin de round pour que
+        // le transport jusqu'au mur soit visible (notamment en duel)
+        const anyCarrying = arrowPool.some((a) => a.active && a.state === 'IN_FLIGHT' && a.carryIds.length > 0);
+        advance(game, players, cfg, anyCarrying);
       } else if (game.state === 'ROUND_END') {
         advance(game, players, cfg);
         if (game.state === 'RESPAWN') { respawnAll(); game.state = 'PLAYING'; }

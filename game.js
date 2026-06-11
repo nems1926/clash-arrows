@@ -5,10 +5,12 @@ export function createGame() {
 }
 
 // One call per fixed step. Mutates: awards a won round; transitions state.
+// holdRound (optionnel) : tant qu'il est vrai, ne pas terminer le round même si
+// roundOver — laisse une flèche embrocheuse finir de transporter ses corps.
 // States: LOBBY → PLAYING → (ROUND_END → RESPAWN → PLAYING)* → MATCH_END.
-export function advance(game, players, cfg) {
+export function advance(game, players, cfg, holdRound = false) {
   if (game.state === 'PLAYING') {
-    if (roundOver(players)) {
+    if (!holdRound && roundOver(players)) {
       const w = lastAlive(players);
       if (w !== null) {
         const winner = players.find((p) => p.index === w);

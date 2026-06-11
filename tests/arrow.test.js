@@ -163,6 +163,25 @@ describe('drill arrow pierces thin tiles, stops on solid', () => {
   });
 });
 
+describe('impale carry state', () => {
+  it('une flèche neuve démarre sans corps porté', () => {
+    const a = createArrow();
+    expect(a.carryIds).toEqual([]);
+  });
+  it('spawnArrow réinitialise carryIds', () => {
+    const a = createArrow();
+    a.carryIds = [2, 3];
+    spawnArrow(a, 0, 0, 1, 0, 0, DEFAULT_CONFIG, 'normal');
+    expect(a.carryIds).toEqual([]);
+  });
+  it('release réinitialise carryIds', () => {
+    const pool = createPool(1);
+    pool[0].carryIds = [1];
+    release(pool, pool[0]);
+    expect(pool[0].carryIds).toEqual([]);
+  });
+});
+
 describe('laser arrow bounces then plants', () => {
   it('reflects velocity on a wall and decrements bounces', () => {
     const c = cfg();
@@ -218,5 +237,28 @@ describe('bolt arrow splits on impact', () => {
     spawnArrow(bolt, 100, 55, 1, 0, 0, c, 'bolt');
     for (let i = 0; i < 40 && bolt.state === 'IN_FLIGHT'; i++) updateArrow(bolt, c, grid, DT);
     expect(bolt.state).toBe('SPLIT');
+  });
+});
+
+describe('une flèche porteuse se plante sans réaction spéciale', () => {
+  // grid 5 colonnes × 1 ligne, mur SOLID en colonne 4 ; TILE=10
+  const wallGrid = () => [[0, 0, 0, 0, SOLID]];
+  const cfg2 = { ...DEFAULT_CONFIG, W: 50, H: 10, TILE: 10, arrowStraightDist: 1000 };
+
+  it('un laser porteur ne rebondit pas, il se plante', () => {
+    const a = createArrow();
+    spawnArrow(a, 30, 2, 1, 0, 0, cfg2, 'laser'); // vers la droite, vers le mur
+    a.carryIds = [1];        // porte un corps
+    a.bounces = 3;           // aurait rebondi sans corps
+    for (let i = 0; i < 30 && a.state === 'IN_FLIGHT'; i++) updateArrow(a, cfg2, wallGrid(), 1 / 60);
+    expect(a.state).toBe('STUCK');
+  });
+
+  it('un bolt porteur ne se fragmente pas, il se plante', () => {
+    const a = createArrow();
+    spawnArrow(a, 30, 2, 1, 0, 0, cfg2, 'bolt');
+    a.carryIds = [1];
+    for (let i = 0; i < 30 && a.state === 'IN_FLIGHT'; i++) updateArrow(a, cfg2, wallGrid(), 1 / 60);
+    expect(a.state).toBe('STUCK');
   });
 });

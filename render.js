@@ -1,6 +1,45 @@
 import { SOLID, ONEWAY, DESTRUCT, SPIKE } from './tilemap.js';
 import { W, H, SCALE, TILE } from './config.js';
 import { ARROW_TYPES } from './arrow.js';
+import { spriteFor } from './sprite.js';
+
+const SHEET = 'spritesheet/run32.webp';
+const FRAME = 32; // cellule source carrée 32x32 (8 frames)
+let RUN_IMG = null;
+const animClocks = new Map(); // player.index -> secondes écoulées
+
+// Appelé une fois au boot (sketch.js), après la création du Canvas.
+export function loadSprites() {
+  RUN_IMG = loadImage(SHEET);
+}
+
+const spritesReady = () => RUN_IMG && RUN_IMG.width > 0;
+
+// Dessine le sprite animé du joueur dans le repère déjà translaté+scalé de drawWorld.
+// Cellule carrée 32x32 mise à ~12 px de haut : l'archer rend ~8 large x 12 haut,
+// centré X sur la hitbox, pieds alignés sur le bas de la hitbox.
+function drawPlayerSprite(p) {
+  const clk = (animClocks.get(p.index) || 0) + deltaTime / 1000; // deltaTime: global q5 (ms)
+  animClocks.set(p.index, clk);
+  const s = spriteFor(p, clk);
+  const sx = s.frameIndex * FRAME;
+  const destH = 12;            // ~ hauteur hitbox (cf. design)
+  const destW = destH;         // cellule carrée -> conserve le ratio de la planche
+  const cx = p.x + p.w / 2;    // centre X de la hitbox
+  const footY = p.y + p.h;     // bas de la hitbox = pieds
+  // q5play force imageMode(CENTER) au boot ; on revient à CORNER pour que (x,y)
+  // soit le coin haut-gauche du sprite (ancrage pieds/centre calculé ci-dessous).
+  imageMode(CORNER);
+  for (const dx of [-W, 0, W]) {
+    for (const dy of [-H, 0, H]) {
+      push();
+      translate(cx + dx, footY + dy);
+      if (s.flipX) scale(-1, 1);
+      image(RUN_IMG, -destW / 2, -destH, destW, destH, sx, 0, FRAME, FRAME);
+      pop();
+    }
+  }
+}
 
 const COL = {
   bg: '#0d1b2a',
@@ -46,15 +85,39 @@ export function drawWorld(grid, players) {
     }
   }
 
-  // players + ghosts (skip the dead)
+  // players + ghosts. On saute les morts SAUF les corps embrochés, dessinés comme
+  // cadavres inertes (gris) à leur position (suivie/épinglée par la flèche).
   for (const player of players) {
-    if (player.state === 'DEAD') continue;
-    fill(PLAYER_COLORS[player.index % PLAYER_COLORS.length]);
-    for (const dx of [-W, 0, W]) {
-      for (const dy of [-H, 0, H]) {
-        rect(player.x + dx, player.y + dy, player.w, player.h);
+    if (player.state === 'DEAD') {
+      if (player.impaled) {
+        fill('#6b7280'); // gris cadavre
+        for (const dx of [-W, 0, W]) {
+          for (const dy of [-H, 0, H]) {
+            rect(player.x + dx, player.y + dy, player.w, player.h);
+          }
+        }
+      }
+      continue;
+    }
+    if (spritesReady()) {
+      drawPlayerSprite(player);
+    } else {
+      fill(PLAYER_COLORS[player.index % PLAYER_COLORS.length]);
+      for (const dx of [-W, 0, W]) {
+        for (const dy of [-H, 0, H]) {
+          rect(player.x + dx, player.y + dy, player.w, player.h);
+        }
       }
     }
+    // DEBUG: contour blanc de la hitbox par-dessus le sprite, pour visualiser
+    // le désalignement hitbox <-> image. À retirer une fois l'ancrage réglé.
+    // stroke(255); strokeWeight(0.5); noFill();
+    //for (const dx of [-W, 0, W]) {
+    //  for (const dy of [-H, 0, H]) {
+    //    rect(player.x + dx, player.y + dy, player.w, player.h);
+    //  }
+    // }
+    //noStroke();
     if (player.shield) {
       stroke(COL.shield); strokeWeight(1); noFill();
       rect(player.x - 1, player.y - 1, player.w + 2, player.h + 2);

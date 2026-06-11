@@ -26,6 +26,7 @@ export function createArrow() {
     type: 'normal',
     traveled: 0,             // path distance flown so far (gates gravity onset)
     bounces: 0,              // remaining laser reflections
+    carryIds: [],            // index des joueurs embrochés portés par cette flèche
     w: 6, h: 2,
   };
 }
@@ -45,6 +46,7 @@ export function spawnArrow(a, x, y, dx, dy, owner, cfg, type = 'normal') {
   a.traveled = 0;
   a.type = type;
   a.bounces = def.bounces || 0;
+  a.carryIds = [];
   return a;
 }
 
@@ -84,14 +86,17 @@ export function updateArrow(a, cfg, grid, dt) {
     const ny = wrap(a.y + sy, cfg.H);
     if (arrowBoxStops(grid, nx, ny, a.w, a.h, cfg.TILE, a.type)) {
       const def = ARROW_TYPES[a.type] || {};
-      if (def.bounces && a.bounces > 0) {
+      // Une flèche qui porte un corps devient un projectile lourd : elle ignore
+      // ses réactions spéciales (rebond laser / fragmentation bolt) et se plante.
+      const carrying = a.carryIds.length > 0;
+      if (!carrying && def.bounces && a.bounces > 0) {
         const axis = tileHitAxis(grid, a.x, a.y, nx, ny, a.w, a.h, cfg.TILE, a.type);
         if (axis.x) a.vx = -a.vx;
         if (axis.y) a.vy = -a.vy;
         a.bounces--;
         return a; // resume next frame with reflected velocity
       }
-      a.state = def.explosive ? 'EXPLODE' : (def.splitCount ? 'SPLIT' : 'STUCK');
+      a.state = carrying ? 'STUCK' : (def.explosive ? 'EXPLODE' : (def.splitCount ? 'SPLIT' : 'STUCK'));
       a.vx = 0; a.vy = 0;
       return a; // rest at the last clear position (a.x, a.y)
     }
@@ -117,4 +122,5 @@ export function acquire(pool) {
 export function release(pool, a) {
   a.active = false;
   a.state = 'STUCK';
+  a.carryIds = [];
 }

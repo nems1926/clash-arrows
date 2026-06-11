@@ -1,126 +1,109 @@
-# Sprites animés pour l'archer — design
+# Sprites animés pour le joueur (course) — design
 
 Date : 2026-06-10
 Statut : validé (brainstorm), prêt pour plan d'implémentation.
 
 ## Objectif
 
-Remplacer le rendu du joueur en rectangle plein par des sprites animés pixel-art,
-pour les états **course (run)**, **saut (jump)**, **dodge** et **roulade (roll)**.
-Les planches source sont fournies dans `spritesheet/` :
+Remplacer le rendu du joueur en rectangle plein par un sprite pixel-art **animé en
+course**, à partir de la planche fournie `spritesheet/run32.webp`. Périmètre volontairement
+étroit : uniquement la course (run) et une pose statique pour tout le reste. La taille de
+jeu du joueur (hitbox) ne change pas.
 
-- `spritesheet/run_dodge_roll.png` (2816×1536, RGBA) — 3 sections empilées :
-  section 1 = run (12 frames), section 2 = dodge (8 frames), section 3 = roll (10 frames).
-- `spritesheet/jump.png` (2815×479, RGB) — 1 animation de saut (8 frames).
+## Asset source
 
-## Contrainte clé : planches de présentation, pas d'atlas
-
-Les deux planches contiennent du texte incrusté (titre, en-têtes « SECTION… »,
-étiquettes F1/F2…) et ne sont **pas** sur une grille régulière. `jump.png` est en
-RGB (pas d'alpha) — le fond damier est potentiellement incrusté dans les pixels.
-Une étape d'**extraction** est donc obligatoire avant toute animation.
+- `spritesheet/run32.webp` — **256×32, 8 frames de 32×32**, **fond transparent**
+  (WebP VP8X avec canal alpha vérifié). Grille régulière : aucune extraction / aucun
+  color-key nécessaire ; `loadImage` peut blitter directement les sous-rectangles.
+- Le personnage occupe toute la hauteur de la cellule (y 0→31, pieds en bas) et ~22 px de
+  large, à peu près centré horizontalement dans les 32 px.
 
 ## Décisions de design (issues du brainstorm)
 
-- **Extraction** : pré-traiter en atlas propres via un script Node ponctuel
-  (je découpe/recadre/normalise moi-même les planches existantes).
-- **Distinction des 4 joueurs** : **teinte par joueur** (P1 vert, P2 bleu, P3 rose,
-  P4 jaune), via `tint()` multiplicatif. Fallback : atlas recolorés pré-calculés
-  par décalage de teinte si le `tint()` rend les couleurs ternes (tranché à la
-  vérification visuelle).
-- **Taille d'affichage** : **~18 px logiques de haut** (~1.5 tuile). La hitbox reste
-  8×12 ; le sprite déborde, centré horizontalement sur la hitbox, **pieds alignés
-  sur le bas de la hitbox**.
+- **Distinction des joueurs** : **aucune pour l'instant**. Les 4 joueurs dessinent le même
+  archer, sans teinte ni marqueur de couleur. (La distinction visuelle par personnage est
+  remise à plus tard, hors périmètre.)
+- **Taille d'affichage** : **~12 px logiques de haut**, soit la taille à l'écran de la boîte
+  actuelle. La hitbox reste **8×12** ; le sprite est dessiné dans une cellule carrée 32×32
+  mise à l'échelle (l'archer rend donc ~8 de large × ~12 de haut), **centré horizontalement
+  sur la hitbox**, **pieds alignés sur le bas de la hitbox**.
+- **États couverts** : **run** (course au sol) et **idle** (une frame figée). Les états
+  AIRBORNE / WALLSLIDE / DODGING retombent sur la frame idle faute d'art dédié. DEAD n'est
+  pas dessiné (déjà ignoré au rendu).
+- **Vitesse d'animation** : fps fixe (~12), réglable après vérif visuelle. Pas d'asservissement
+  à la vitesse de déplacement.
 
 ## Architecture
 
-Respecte la frontière du projet (CLAUDE.md) : logique pure et testable d'un côté,
-seul `render.js`/`sketch.js` touchent q5play.
+Respecte la frontière du projet (CLAUDE.md) : logique d'animation **pure et testable** d'un
+côté, **seul `render.js` / `sketch.js`** touchent q5play.
 
-### 1. Pipeline d'assets (hors runtime)
+### 1. Module pur `sprite.js` (+ `tests/sprite.test.js`)
 
-- **`tools/extract-sprites.mjs`** — dev only, exécuté une fois, `pngjs` en
-  **devDependency** (lib pure JS, outillage uniquement ; le jeu continue de charger
-  q5play depuis le CDN, aucune dépendance runtime ajoutée).
-- Étapes :
-  1. Décoder le PNG en RGBA. Pour `jump.png` (RGB), color-key le fond (damier ou
-     couleur unie) → alpha d'abord.
-  2. Repérer les bandes de frames (run / dodge / roll) par histogramme d'occupation
-     des lignes, en écartant les bandes de texte (profil différent des personnages).
-  3. Dans chaque bande, projection en colonnes sur l'alpha → les espaces transparents
-     entre personnages séparent les frames (12 / 8 / 10 / 8).
-  4. Recadrer chaque frame à sa boîte englobante, puis normaliser à une cellule
-     commune par animation, **ancrée pieds-au-sol (bottom-center)** pour éviter le
-     tremblement entre frames.
-  5. Écrire dans **`spritesheet/atlas/`** : un PNG propre par animation
-     (`run.png`, `jump.png`, `dodge.png`, `roll.png`) + **`frames.json`**
-     `{ run:{frameW,frameH,count,fps}, jump:{…}, dodge:{…}, roll:{…} }`.
-- Vérification visuelle de chaque atlas, itération sur le découpage si une frame est
-  mal coupée. Atlas + JSON commités ; le script reste pour régénérer.
+Aucune dépendance q5/DOM — testable sous vitest. Mappe l'état joueur (FSM + `vx` + `facing`)
+vers un descripteur de blit.
 
-### 2. Module pur `sprite.js` (+ `tests/sprite.test.js`)
+- **`CLIPS = { run: { count: 8, fps: 12, loop: true } }`** — `count` doit matcher la planche.
+- **`MOVE_EPS`** (~5 px/s) : seuil idle ↔ run sur `|vx|`. **`IDLE_FRAME`** (0) : frame de
+  repos, puisée dans l'atlas run (réglable à la vérif visuelle).
+- **`selectClip(p)`** :
+  - `GROUNDED` + `|vx| > MOVE_EPS` → `'run'` ;
+  - `GROUNDED` quasi immobile → `'idle'` ;
+  - `AIRBORNE` / `WALLSLIDE` / `DODGING` → `'idle'` (pas encore de clip dédié).
+- **`frameIndexFor(clip, clock)`** :
+  - `run` : horloge libre → `floor(clock · fps) % count`, en boucle ;
+  - `idle` (et tout clip inconnu) → `IDLE_FRAME`.
+- **`spriteFor(p, clock)`** → **`{ clip, atlas: 'run', frameIndex, flipX: p.facing < 0 }`**.
+  `facing` est toujours ±1 (initialisé à 1, mis à jour seulement si `moveX ≠ 0`), donc le
+  flip est sûr.
 
-Aucune dépendance q5/DOM — testable sous vitest.
+### 2. `render.js` — branchement q5
 
-- **Table des clips** : durées / fps / boucle ou non, alimentée par `frames.json`.
-- **`selectClip(player)` → nom de clip** selon le FSM existant :
-  - `GROUNDED` + |vx| > seuil → **run** ;
-  - `GROUNDED` immobile (|vx| ≤ seuil) → **idle** (frame calme du run, maintenue) ;
-  - `AIRBORNE` / `WALLSLIDE` → **jump** (frame choisie selon `vy`) ;
-  - `DODGING` + `rolling` → **roll** ; `DODGING` sans `rolling` → **dodge** ;
-  - `DEAD` → rien (déjà ignoré au rendu).
-- **`frameIndexFor(...)` → index de frame** :
-  - **run / jump** : horloge libre à `fps` fixe, en boucle.
-  - **jump** : mapping de la frame sur `vy` (frames de montée quand `vy < 0`,
-    d'apex/descente quand `vy ≥ 0`) — réglage fin à la vérif visuelle.
-  - **dodge / roll** : `index = floor((1 − timer/duration) · count)`, où
-    `timer = dodgeTime` et `duration = dodgeDuration` (3) ou `rollDuration` (7).
-    Le clip entier se joue pile sur la durée de l'action (sinon un fps fixe ne tient
-    pas : le dodge ne dure que 3 frames pour 8 frames d'animation).
-- Retour : descripteur **`{ clip, frameIndex, flipX }`**, `flipX` dérivé de
-  `player.facing`.
+- **`loadSprites()`** appelé au boot depuis `sketch.js` : `loadImage('spritesheet/run32.webp')`.
+  La géométrie des frames est constante (cellule 32×32, 8 frames) — pas de fichier de
+  métadonnées nécessaire (planche uniforme).
+- **Horloges d'animation** côté render : `Map` clé = `player.index`, avancée chaque frame de
+  `deltaTime / 1000` (deltaTime : global q5, ms).
+- **`drawPlayerSprite(p)`** (dans le repère déjà translaté+scalé de `drawWorld`) :
+  - `{ frameIndex, flipX } = spriteFor(p, clock)` ; `sx = frameIndex · 32` ;
+  - **`destH ≈ 12`**, **`destW ≈ 12`** (cellule carrée → conserve le ratio de la planche) ;
+  - `cx = p.x + p.w / 2` (centre X de la hitbox), `footY = p.y + p.h` (pieds = bas de la
+    hitbox) ; dessin à `(cx − destW/2, footY − destH)` ;
+  - **flip horizontal** via `scale(-1, 1)` quand `flipX` ;
+  - **nearest-neighbor** (déjà actif globalement) ;
+  - conserve les **fantômes toroïdaux 3×3** (boucle `dx ∈ {−W,0,W}`, `dy ∈ {−H,0,H}`).
+- Les blocs **shield (contour)** et **aimDir (ligne de visée)** existants restent inchangés,
+  dessinés **par-dessus** le sprite.
+- **Fallback** : si l'image n'est pas encore chargée (`width === 0`), retomber sur le rendu
+  rectangle coloré actuel → jamais de joueur vide.
 
-### 3. `player.js` — un seul ajout
+### 3. `sketch.js`
 
-- Ajout du booléen **`rolling`** sur l'objet joueur : `true` sur la branche roll
-  (input vers le bas), `false` sinon. Distingue roll et dodge qui partagent l'état
-  `DODGING`. Initialisé dans `createPlayer`, positionné dans `updatePlayer`.
-- Test associé dans `tests/player.test.js`.
+- Mettre à jour l'import de `render.js` pour inclure `loadSprites`.
+- Appeler **`loadSprites()` au boot**, après la création du Canvas (à côté de `noSmooth()`).
 
-### 4. `render.js` — branchement q5
+### 4. `player.js`
 
-- **`loadSprites()`** appelé au boot depuis `sketch.js` : `loadImage` des 4 atlas +
-  parse de `frames.json`.
-- **Map d'animateurs** côté render, clé = `player.index`, dont l'horloge est avancée
-  chaque frame.
-- Pour chaque joueur vivant :
-  - appel à `sprite.js` pour `{ clip, frameIndex, flipX }` ;
-  - rect destination ~18 px de haut, centré horizontalement sur la hitbox, pieds sur
-    le bas de la hitbox ;
-  - `image()` du sous-rectangle de l'atlas, **nearest-neighbor** ;
-  - **`tint()` par couleur joueur** (`PLAYER_COLORS`) ; flip horizontal selon `flipX` ;
-  - conserve les **fantômes toroïdaux** (3×3) et le rendu **shield / ligne de visée**
-    actuels.
-- **Fallback** : si les images ne sont pas encore chargées, retomber sur le rendu
-  rectangle actuel → jamais d'écran vide.
+- **Aucune modification.** Pas de `rolling`/dodge dans le périmètre. Hitbox et constantes de
+  feel inchangées.
 
-### 5. Tests
+## Tests
 
-- `tests/sprite.test.js` : mapping état → clip ; sélection de frame jump selon `vy` ;
-  normalisation dodge/roll sur le timer ; `flipX` selon `facing` ; cas idle.
-- `tests/player.test.js` : `rolling` correctement positionné (roll vs dodge vs reset).
-- Le rendu lui-même n'est pas testé unitairement (frontière q5) — vérification à l'œil.
+- `tests/sprite.test.js` : mapping état → clip (run vs idle ; airborne/wallslide/dodging →
+  idle) ; avance + bouclage des frames run ; idle = frame fixe ; `flipX` selon `facing`.
+- Le rendu lui-même n'est pas testé unitairement (frontière q5) — vérification à l'œil au
+  lancement.
+- `npm test` doit rester vert (~140 tests existants non touchés).
 
 ## Points laissés ouverts pour la vérification visuelle (non bloquants)
 
-- La **frame d'idle** exacte (frame calme du run).
-- Le **mapping précis des frames de jump** sur `vy`.
-- Le rendu du **`tint()`** par joueur (sinon bascule sur atlas recolorés pré-calculés).
-- Pas d'animation dédiée pour **WALLSLIDE** (réutilise une frame de jump) ni pour
-  **DEAD** (joueur déjà masqué au rendu).
+- La **frame d'idle** exacte (`IDLE_FRAME`, défaut 0) si une autre pose est plus calme.
+- Le **fps** de la course si l'animation paraît trop rapide/lente.
+- Le sens du **flip** (`p.facing < 0`) si le sprite source regarde déjà à gauche par défaut.
 
 ## Hors périmètre
 
-- Animations de tir à l'arc, de mort, d'atterrissage dédiée.
+- Animations de saut / dodge / roll / mort / tir.
+- Distinction visuelle des joueurs (teinte ou personnages distincts) — remis à plus tard.
 - Sprites pour flèches, pickups, décor (restent en primitives).
 - Particules / audio (jalon 5 du PRD).

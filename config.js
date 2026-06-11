@@ -26,6 +26,7 @@ export const DEFAULT_CONFIG = {
   jumpCutMult: 0.5,    // ascent cut on jump release
   // --- Combat (J1), valeurs de départ PRD §5, calibrables au panneau debug ---
   arrowSpeed: 220,        // px/s   vitesse initiale de la flèche
+  impaleSpeedMult: 1.5,   //        accélération composée de la flèche par kill embroché
   arrowGravity: 480,      // px/s²  arc balistique (< gravité joueur)
   arrowStraightDist: 50, // px  vol tendu (sans gravité) avant que la gravité s'applique (~1/3 d'écran)
   quiverStart: 3,         // flèches de départ
