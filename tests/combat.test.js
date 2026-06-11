@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aabbOverlap, toroidalOverlap, canCatch, isArmed, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap } from '../combat.js';
+import { aabbOverlap, toroidalOverlap, canCatch, isArmed, arrowLethal, isStomp, isInvulnerable, killOrShield, playersInRadius, destructibleCellsInRadius, spikeOverlap, impale, carryFollow } from '../combat.js';
 import { DEFAULT_CONFIG } from '../config.js';
 import { SPIKE } from '../tilemap.js';
 
@@ -96,6 +96,39 @@ describe('explosion & shield helpers', () => {
     ];
     const cells = destructibleCellsInRadius(grid, 15, 15, 8, 10, 30, 30); // near col1,row1 center (15,15)
     expect(cells).toEqual([{ r: 1, c: 1 }]);
+  });
+});
+
+describe('impale & carry', () => {
+  const mkArrow = () => ({ x: 100, y: 50, w: 6, h: 2, vx: 200, vy: 0, carryIds: [] });
+  const mkPlayer = (index) => ({ index, x: 100, y: 50, w: 6, h: 12, vx: 0, vy: 0, state: 'AIRBORNE', shield: false });
+
+  it('impale tue, marque impaled, embroche et accélère ×1.5', () => {
+    const a = mkArrow();
+    const p = mkPlayer(1);
+    impale(a, p, cfg());
+    expect(p.state).toBe('DEAD');
+    expect(p.impaled).toBe(true);
+    expect(a.carryIds).toEqual([1]);
+    expect(a.vx).toBeCloseTo(300); // 200 × 1.5
+  });
+
+  it('deux kills successifs composent l\'accélération (×2.25)', () => {
+    const a = mkArrow();
+    impale(a, mkPlayer(1), cfg());
+    impale(a, mkPlayer(2), cfg());
+    expect(a.carryIds).toEqual([1, 2]);
+    expect(a.vx).toBeCloseTo(450); // 200 × 1.5 × 1.5
+  });
+
+  it('carryFollow recentre les corps portés sur la flèche', () => {
+    const a = { ...mkArrow(), x: 130, y: 40, carryIds: [1] };
+    const players = [mkPlayer(0), mkPlayer(1)];
+    carryFollow(a, players);
+    const p = players.find((q) => q.index === 1);
+    // centre flèche = (133, 41) ; centre corps doit coïncider → x = 133 - 3, y = 41 - 6
+    expect(p.x).toBeCloseTo(130);
+    expect(p.y).toBeCloseTo(35);
   });
 });
 

@@ -89,6 +89,30 @@ export function spikeOverlap(grid, player, TILE) {
   return false;
 }
 
+// Embrochage : tue le joueur, le marque comme corps porté par la flèche, l'ajoute
+// à la liste des corps embrochés et accélère la flèche (composé à chaque kill).
+// À n'appeler QUE quand le kill n'est pas absorbé par un bouclier.
+export function impale(arrow, player, cfg) {
+  player.state = 'DEAD';
+  player.vx = 0; player.vy = 0;
+  player.impaled = true;
+  arrow.carryIds.push(player.index);
+  arrow.vx *= cfg.impaleSpeedMult;
+  arrow.vy *= cfg.impaleSpeedMult;
+}
+
+// Recentre chaque corps embroché sur la position courante de la flèche (empilés).
+export function carryFollow(arrow, players) {
+  const cx = arrow.x + arrow.w / 2;
+  const cy = arrow.y + arrow.h / 2;
+  for (const id of arrow.carryIds) {
+    const p = players.find((q) => q.index === id);
+    if (!p) continue;
+    p.x = cx - p.w / 2;
+    p.y = cy - p.h / 2;
+  }
+}
+
 // stomper kills victim on a vertical-from-above contact: descending, horizontally
 // overlapping, its bottom was above the victim's head last frame (wasAboveHead)
 // AND has actually reached the head this frame (reachedHead). The reachedHead
