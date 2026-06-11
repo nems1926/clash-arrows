@@ -26,6 +26,7 @@ export function createArrow() {
     type: 'normal',
     traveled: 0,             // path distance flown so far (gates gravity onset)
     bounces: 0,              // remaining laser reflections
+    carryIds: [],            // index des joueurs embrochés portés par cette flèche
     w: 6, h: 2,
   };
 }
@@ -45,6 +46,7 @@ export function spawnArrow(a, x, y, dx, dy, owner, cfg, type = 'normal') {
   a.traveled = 0;
   a.type = type;
   a.bounces = def.bounces || 0;
+  a.carryIds = [];
   return a;
 }
 
@@ -117,4 +119,5 @@ export function acquire(pool) {
 export function release(pool, a) {
   a.active = false;
   a.state = 'STUCK';
+  a.carryIds = [];
 }

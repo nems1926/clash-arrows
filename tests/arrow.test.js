@@ -163,6 +163,25 @@ describe('drill arrow pierces thin tiles, stops on solid', () => {
   });
 });
 
+describe('impale carry state', () => {
+  it('une flèche neuve démarre sans corps porté', () => {
+    const a = createArrow();
+    expect(a.carryIds).toEqual([]);
+  });
+  it('spawnArrow réinitialise carryIds', () => {
+    const a = createArrow();
+    a.carryIds = [2, 3];
+    spawnArrow(a, 0, 0, 1, 0, 0, DEFAULT_CONFIG, 'normal');
+    expect(a.carryIds).toEqual([]);
+  });
+  it('release réinitialise carryIds', () => {
+    const pool = createPool(1);
+    pool[0].carryIds = [1];
+    release(pool, pool[0]);
+    expect(pool[0].carryIds).toEqual([]);
+  });
+});
+
 describe('laser arrow bounces then plants', () => {
   it('reflects velocity on a wall and decrements bounces', () => {
     const c = cfg();
